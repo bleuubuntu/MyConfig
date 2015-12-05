@@ -1,0 +1,1108 @@
+#! /usr/bin/perl
+
+# Postfixadmin-installer
+
+# Installs and nearly configures a Postfix/Dovecot/MySQL/Postfixadmin mailer on a Debianish system.
+
+# You should be able to just drop it in and run it. If it's missing anything (it only needs 
+# LWP::Simple and for Postfix and MySQL to be configured enough to be running) it tells you how to 
+# get it.
+# Tries to get the MySQL debian-sys-maint credentials and use them. Currently, I'm not quite 
+# sure what it does if it doesn't get them :)
+#
+# Written by Avi (@avi.co) in 2011
+
+#Depends: libwww-perl, (mysql-server|mariadb-server), postfix
+
+use strict;
+use File::Copy;
+use Cwd;
+use Digest::SHA qw/sha1_hex/;
+use Term::ANSIColor;
+use Getopt::Long qw/:config auto_version/;
+
+if(availableDovecotVersion() !~ /^2\./){
+  print STDERR "This script will not work on versions of Dovecot other than 2.x (you have ".availableDovecotVersion().")\nExiting.\n";
+  exit 1;
+}
+
+our $VERSION = "0.20140214 (Wheezy; Dovecot 2.x)";
+
+my $f_log = '/tmp/postfixadmin-installer.log';
+my $writeLog = 1;
+my $mysqlhost = undef;
+my $mysqluser = undef;
+my $mysqlpass = undef;
+my $libmailsender = "http://avi.co/stuff/libmail-sender-perl_0.8.22-1_all.deb";
+my $fqdn;
+my $help;
+my $overwrite = 0;
+my $colour=1;
+my $version=0;
+
+# This is the user that postfix and dovecot (and whatever else) will use to interfere with the db. 
+my $dbuser = "vmail";
+my $dbhost = "localhost";
+my $dbname = "vmail";
+my $dbpass = createPassword(25);
+chomp $dbpass;
+
+GetOptions(
+  'colour!'          => \$colour,
+  'overwrite'        => \$overwrite,
+	'log!'	           => \$writeLog,
+	'logfile=s'        => \$f_log,
+	'mysqluser=s'      => \$mysqluser,
+	'mysqlpass=s'      => \$mysqlpass,
+	'mysqlhost=s'      => \$mysqlhost,
+	'libmailsender=s'  => \$libmailsender,
+	'fqdn=s'           => \$fqdn,
+	'help|h'           => \$help,
+	'pfa-mysqluser=s'  => \$dbuser,
+	'pfa-mysqlpass=s'  => \$dbpass,
+	'pfa-mysqlhost=s'  => \$dbhost,
+	'pfa-mysqldb=s'    => \$dbname,
+	'version'          => \$version,
+);
+
+if(1 == $version){
+	print "postfixadmin-installer version $VERSION\n";
+	exit;
+}
+
+unless($fqdn =~ /.+/){
+	$fqdn = `hostname -f`;
+	chomp $fqdn;
+}
+
+if($help){
+  print <<EOF;
+postfixadmin-installer
+  Installs postfixadmin
+usage:
+  postfixadmin-installer [option]
+  --nocolour             Don't print coloured text
+  --fqdn <fqdn>          set FQDN (used in links in postfixadmin UI).
+  --help                 show this help.
+  --nolog                don't log
+  --logfile <path>       write logfile at path
+  --libmailsender <url>  URL to Mail::Sender deb package
+  --overwrite            Overwrite detected existing installs
+ Mysql admin details: these are the details the script will use to log in
+                      
+  --mysqlhost   host
+  --mysqluser   username
+  --mysqlpass   password
+  If none are set, will use the contents of /etc/mysql/debian.cnf to auth with the 
+  db. If you set a password here you must also set a user.
+ Set postfixadmin's MySQL details; these are the details PFA will use day-to-day:
+  --pfa-mysqlhost   host default: 
+  --pfa-mysqluser   username
+  --pfa-mysqlpass   password
+  --pfa-mysqldb     database
+EOF
+exit;
+}
+
+
+
+if($writeLog > 0){
+	eval{ open(my $f, ">", $f_log) or die "Error opening logfile '$f_log' : $!" };
+	if($@){
+		_warn($@);
+	$writeLog = 0;
+	}
+}
+	
+my @errors;
+my $task;
+
+select(STDOUT);
+$|++;
+
+my ($y,$m,$d)=(localtime(time))[5,4,3];
+my $date = $y + 1900 ."-".sprintf("%02d",$m + 1)."-$d";
+
+
+my $libmailsender = "http://avi.co/stuff/libmail-sender-perl_0.8.22-1_all.deb";
+my $libmailsender_tmpfilename = "/tmp/libmail-sender-perl_0.8.22-1_all.deb";
+
+
+print "Postfixadmin-installer\n\n";
+print "Installing;";
+if($writeLog){
+	print " writing a log to $f_log";
+}else{
+	print " not writing a log file";
+}
+if($overwrite){
+	printRed(", overwriting existing installations");
+	print "\n";
+}else{
+	print ", aborting if another installtion is detected\n";
+}
+print "\nFQDN guessed as ";
+printYellow($fqdn);
+print "\n\n";
+print "Run with --help to see options; carrying on in two seconds...";
+sleep(1);
+print ".";
+sleep(1);
+print "Carrying on! \n";
+# There's a bunch of faffing with files. Every file we edit is backed up first, unless it's 
+# (almost) guaranteed to be either not there already or not wanted (like postfix's mysql config).
+
+my $dovecotDotConfFile = "/etc/dovecot/dovecot.conf";
+my $dovecotDotConfBackupFile = "/etc/dovecot/.bak_${date}_dovecot.conf";
+
+my $dovecotSqlFile = "/etc/dovecot/dovecot-sql.conf";
+my $dovecotSqlBackupFile = "/etc/dovecot/.bak_${date}_dovecot-sql.conf";
+
+# We make the MySQL files in here. All other postfix files have their full paths set.
+my $postfixDir = "/etc/postfix";
+
+my $postfixMainDotCfFile = "/etc/postfix/main.cf";
+my $postfixMainDotCfBackupFile = "/etc/postfix/.bak_${date}_main.cf";
+
+my $postfixMasterDotCfFile = "/etc/postfix/master.cf";
+my $postfixMasterDotCfBackupFile = "/etc/postfix/.bak_${date}_master.cf";
+
+my $saslauthdFile = "/etc/default/saslauthd";
+my $saslauthdBackupFile = "/etc/default/.bak_${date}_saslauthd";
+
+# This is the dir under which the mailboxes are created, as "/var/lib/vmail/domain/<email-address>/Maildir
+my $mailboxDir = "/var/lib/vmail";
+
+
+#A glob matching the munin plugins we wish to enable:
+my $muninPluginGlob = "/usr/share/munin/plugins/postfix*";
+# The dir for the active munin plugins:
+my $muninActivePluginDir = "/etc/munin/plugins";
+
+
+# I assume a group named the same as this. Dovecot and Postfix both do their virtual mailbox related
+# jobs as this user, so the contents of $mailboxDir must be owned by it
+my $unixUser = "vmail";
+
+# We also need a user and group for the vacation message management. Again, we simply create a group
+# of the same name as the user. 
+my $vacationUser = "vacation";
+my $vacationSpool = "/var/spool/vacation";
+my $vacationDomain = "autoreply.".$fqdn;
+my $vacationMasterDotCf = "vacation  unix  -\tn\tn\t-\t-\tpipe\n";
+$vacationMasterDotCf .= '  flags=Rq user=vacation argv=/var/spool/vacation/vacation.pl -f ${sender} ${recipient}';
+
+
+# Packages we depend upon. Remember that the script can't cope with installers that need interaction. 
+# Any that do need adding below
+my $packages = "dovecot-common postfix-mysql libapache2-mod-php5 php5-mysql php5-imap libsasl2-2 libsasl2-modules sasl2-bin libdbd-mysql-perl libemail-valid-perl libmime-perl liblog-log4perl-perl liblog-dispatch-perl libgetopt-argvfile-perl libmime-charset-perl libmime-encwords-perl dovecot-imapd dovecot-pop3d ssl-cert";
+
+# postfix and mysql-server both require human-interaction to install, so we insist it's done before 
+# this script runs. There's probably a more elegant way of doing this. This also forces (or at least 
+# encourages) removal of the old mailer first.
+
+my @missingPackages;
+unless(grep(/^ii/, `dpkg -l postfix`)){
+	push(@missingPackages, "postfix");
+}
+unless(grep(/^ii/, `dpkg -l libwww-perl`)){
+	push(@missingPackages, "libwww-perl");
+}
+unless( (grep(/^ii/, `dpkg -l mysql-server`)) or (grep(/^ii/, `dpkg -l mariadb-server`)) ){
+	push(@missingPackages, "mysql-server or mariadb-server");
+}
+
+if($#missingPackages > 0){
+	print STDERR "Missing packages: ".join(" ", @missingPackages).". Please install these and retry\n";
+	exit 1;
+}
+
+my $ignoreBackupFailures = 0;
+
+# For files we've had problems with:
+my @errors;
+
+eval{
+	require LWP::Simple;
+	LWP::Simple->import();
+};
+if($@){
+	print "I need LWP::Simple, install libwww-perl\n";
+	print "(I'll also need postfix and mysql-server, so you might want to check those now, too)\n";
+	exit 1;
+}
+
+#### Postfixadmin-specific config  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+my $postfixadminURL = "http://downloads.sourceforge.net/project/postfixadmin/postfixadmin/postfixadmin-2.3.6/postfixadmin-2.3.6.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fpostfixadmin%2F%3Fsource%3Ddirectory&ts=1389454145&use_mirror=netcologne";
+my $postfixadminDir = "/var/www/postfixadmin";
+
+my ($postfixadminPasswordPlain, $postfixadminPasswordHash) = postfixadminCreatePassword();
+
+sub printEndInstructions{
+	print "All done, now you can go and visit\n    ";
+	printBlue("http://$fqdn/postfixadmin/setup.php");
+	print "\nand create a new admin user using this setup password:\n\t";
+	printYellow($postfixadminPasswordPlain);
+	print "\n\nHave Fun!\n\n";
+}
+
+#### Postfix-specific config # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+# We need to create a series of files in /etc/postfix (or $postfixDir) for Postfix to use 
+# to get the MySQL credentials, and to find what queires to run to work out what to do with
+# mail addressed to any given address. The credentials need to be the same in all, so this will be
+# put at the top of each:
+sub postfixCredentials() {
+	return <<EOF;
+user = $dbuser
+password = $dbpass
+hosts = $dbhost
+dbname = $dbname
+EOF
+}
+
+# For the vacation script to work, Postfix uses a transport maps file. This is it:
+my $postfixTransportMapsFile = "/etc/postfix/transport";
+
+# This is a hash of the files we create in /etc/postfix (or $postfixDir). The key is the 
+# filename and the value is the query line. The resulting files are a concatenation of the 
+# output of postfixCredentials() above and the relevant value from here.
+my %postfixFiles = (
+	'mysql_virtual_alias_domain_catchall_maps'	=>  'query = SELECT goto FROM alias,alias_domain WHERE alias_domain.alias_domain = \'%d\' and alias.address = CONCAT(\'@\', alias_domain.target_domain) AND alias.active = 1 AND alias_domain.active=\'1\'',
+	'mysql_virtual_alias_domain_mailbox_maps'	=>  'query = SELECT maildir FROM mailbox,alias_domain WHERE alias_domain.alias_domain = \'%d\' and mailbox.username = CONCAT(\'%u\', \'@\', alias_domain.target_domain) AND mailbox.active = 1 AND alias_domain.active=\'1\'',
+	'mysql_virtual_alias_domain_maps'		=>  'query = SELECT goto FROM alias,alias_domain WHERE alias_domain.alias_domain = \'%d\' and alias.address = CONCAT(\'%u\', \'@\', alias_domain.target_domain) AND alias.active = 1 AND alias_domain.active=\'1\'',
+	'mysql_virtual_alias_maps'			=>  'query = SELECT goto FROM alias WHERE address=\'%s\' AND active = \'1\'',
+	'mysql_virtual_domains_maps'			=>  'query = SELECT domain FROM domain WHERE domain=\'%s\' AND active = \'1\'',
+	'mysql_virtual_mailbox_maps'			=>  'query = SELECT maildir FROM mailbox WHERE username=\'%s\' AND active = \'1\'',
+);
+
+# These are the config bits that need to be appended to postfix's main.cf. Handily, postfix
+# is quite happy with repeated config directives, just sticking with the last value it
+# reads so it doesn't matter if we repeat things.
+sub mainDotCf(){
+	my $uid = shift;
+	my $gid = shift;
+	return <<EOF;
+# # # Begin insertion by postfixdovecotmysql script $date # # # 
+# TLS parameters
+smtpd_tls_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
+smtpd_tls_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
+smtpd_use_tls=yes
+virtual_mailbox_domains = proxy:mysql:$postfixDir/mysql_virtual_domains_maps.cf
+virtual_alias_maps =
+   proxy:mysql:$postfixDir/mysql_virtual_alias_maps.cf,
+   proxy:mysql:$postfixDir/mysql_virtual_alias_domain_maps.cf,
+   proxy:mysql:$postfixDir/mysql_virtual_alias_domain_catchall_maps.cf
+virtual_mailbox_maps =
+   proxy:mysql:$postfixDir/mysql_virtual_mailbox_maps.cf,
+   proxy:mysql:$postfixDir/mysql_virtual_alias_domain_mailbox_maps.cf
+virtual_mailbox_base = $mailboxDir
+virtual_uid_maps = static:$uid
+virtual_gid_maps = static:$gid
+transport_maps = hash:$postfixTransportMapsFile
+smtpd_sasl_type = dovecot
+smtpd_sasl_path = private/auth
+broken_sasl_auth_clients = yes
+smtpd_sasl_auth_enable = yes
+smtpd_sasl_local_domain =
+smtpd_recipient_restrictions = permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination 
+# # # End insertion by postfixdovecotmysql script $date # # # 
+EOF
+}
+
+# This needs to appear in the list at the bottom of master.cf. Again, postfix is happy to 
+# have a few of these, but the first wins. This goes at the end to not tread on anybody
+# else's toes (and because that's the easiest place to put it).
+sub masterDotCf() {
+	return <<EOF;
+dovecot   unix  -       n       n       -       -       pipe
+  flags=DRhu user=$unixUser:$unixUser argv=/usr/libexec/dovecot/deliver -d \${recipient}
+EOF
+}
+
+#### Dovecot-specific config # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+# Dovecot can use a separate file for MySQL permissions, which is generally recommended. This
+# is that file:
+sub dovecotDotSql() {
+	my $uid = shift;
+	return <<EOF;
+connect = host=$dbhost dbname=$dbname user=$dbuser password=$dbpass
+driver = mysql
+default_pass_scheme = MD5-CRYPT
+password_query = SELECT username AS user,password FROM mailbox WHERE username = '%u' AND active='1'
+user_query = SELECT concat('/var/lib/vmail/', maildir) as home, 999 AS uid, 122 AS gid FROM mailbox WHERE username = '%u' and active='1'
+EOF
+}
+
+# Dovecot.conf ships with hundreds of comments which are probably useful, and it's not hard to 
+# script the right config changes into it, but it *is* hard for a human to use. So we do away 
+# with that and drop our own in. It's all backed up anyway.
+sub dovecotDotConf(){
+	my $uid = shift;
+	return <<EOF;
+protocols = imap pop3
+log_timestamp = "%Y-%m-%d %H:%M:%S "
+mail_location = maildir:~
+mail_privileged_group = $unixUser
+# This should match that of the owner of the $mailboxDir hierarchy, and 
+# be the same as the one postfix uses.
+first_valid_uid = $uid
+# Allow people to use plaintext auth even when TLS/SSL is available (you
+# might not want this but it is handy when testing):
+disable_plaintext_auth = no
+# Uncomment this to get nice and verbose messages about authentication
+# problems:
+# auth_debug=yes
+ssl = yes
+ssl_cert=</etc/ssl/certs/ssl-cert-snakeoil.pem
+ssl_key=</etc/ssl/private/ssl-cert-snakeoil.key
+protocol pop3 {
+  pop3_uidl_format = %08Xu%08Xv
+}
+# 'plain' here doesn't override the disble_plaintext_auth_default of 'yes'.
+# you should add any other auth mechanisms you want
+auth_mechanisms = plain login
+userdb {
+  driver = sql
+  args = /etc/dovecot/dovecot-sql.conf
+}
+passdb {
+  driver = sql
+  args = /etc/dovecot/dovecot-sql.conf
+}
+service auth {
+  unix_listener /var/spool/postfix/private/auth {
+    mode = 0660
+    # yes, 'postfix' (or the user that owns the above socket file), not vmail
+    user = postfix
+    group = postfix
+  }
+}
+EOF
+}
+
+
+
+### SASL-specific config # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+# SASL is necessary for having Postfix talk to Dovecot to validate credentials it's passed
+# for SMTP auth. It's pretty simple to configure, just changing two lines in its defaults
+# file
+# This sub's unique in that it does the backing up itself, since it parses the backup
+# into the new real file.
+sub sasl(){ 
+	my $in;
+	my $out;
+	eval {open($in, "<", $saslauthdBackupFile) or die()};
+	if ($@){
+		fail("Error opening $saslauthdBackupFile for reading");
+		return;
+	}
+	eval{open($out, ">", $saslauthdFile)};
+	if ($@){
+		fail("Error opening $saslauthdFile for writing");
+		return;
+	}
+	while(<$in>){
+		my $line = $_;
+		if(/^START=no/){
+			$line = "START=yes\n";
+		}
+		if(/^OPTIONS/){
+#			$line = "OPTIONS=\"-c -m /var/spool/postfix/var/run/saslauthd\""
+			$line = "OPTIONS=\"-c -m /var/run/saslauthd\"";
+		}
+		print $out $line;
+	}
+	close($out); 
+	close($in);
+	return 1;
+}
+
+
+### # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+### Here ends the config  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+### # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+# This is code all the way down, now. You shouldn't need or want to change any of this (and, if
+# you do, please tell me so I can fix/amend it here, too!)
+
+
+
+# Herein, the first 'print' of any stanza should serve as a reasonable comment on what it's doing
+print "Guessing MySQL credentials...";
+if ( (!$mysqlhost || !$mysqluser )){
+	($mysqlhost, $mysqluser, $mysqlpass) = &getMySQLCredentials();
+	if (!$mysqlpass){
+		printRed("Failed\n");
+		print "\tPlease enter the password for mysql user \'$mysqluser\':\n";
+		system('stty','-echo');
+		chop($mysqlpass=<STDIN>);
+		system('stty','echo');
+	}else{
+		printGreen("Done\n");
+	}
+}
+
+unless($overwrite > 0){
+	print "Testing for existing install...";
+	if( -d $postfixadminDir ){
+		opendir(my $dh, $postfixadminDir);
+		my $count = 0;
+		while( my $file = readdir($dh)){
+			next if $file =~ m#^\.\.?$#;
+			$count++;
+			if($count > 1){
+				printRed("Found install in '$postfixadminDir'; aborting (run with --overwrite to skip this; --help for all options\n");
+				exit;
+			}
+		}
+	}
+}
+
+
+start("Installing packages (this can take a few minutes)");
+my $cmd = "apt-get -qy install $packages";
+if(run($cmd) != 0){
+	fail($packages);
+	exit 1;
+}else{
+	succeed();
+}
+
+
+start("Testing for Mail::Sender (for the vacation package)");
+my $mailSenderVersion;
+eval{
+	require Mail::Sender;
+	$mailSenderVersion = $Mail::Sender::VERSION;
+};
+if($@){
+	start("Not found\nInstalling Mail::Sender");
+	_log("Downloading '$libmailsender' to '$libmailsender_tmpfilename'");
+	getstore($libmailsender, $libmailsender_tmpfilename);
+	my $cmd = "dpkg -i $libmailsender_tmpfilename >> $f_log";
+	if(run($cmd) == 0){
+		succeed();
+	}else{
+		fail();
+	}
+}else{
+	succeed("Version $Mail::Sender::VERSION");
+}
+
+start("Creating user $unixUser in group $unixUser");
+my($uid,$gid);
+if ( getpwnam($unixUser) =~ /(\d+)/){
+	$uid = $1;
+	if(getgrnam($unixUser) =~ /(\d+)/){
+		$gid = $1;
+		_print ("skipping; $unixUser:$unixUser already exist\n");
+	}else{
+		foreach("groupadd $unixUser", "usermod -a -G $unixUser $unixUser"){
+			run($cmd);
+		}
+	}
+	succeed();
+}else{
+	my $cmd = "useradd -r -d $mailboxDir -s /sbin/nologin -c \"Virtual mailbox\" $unixUser";
+	if(run($cmd) != 0){
+		fail("useradd exited non-zero");
+	}else{
+		$uid = getpwnam($unixUser);
+		$gid = getgrnam($unixUser);
+		chomp $uid;
+		succeed("UID: $uid");
+	}
+}
+
+start("Creating user $vacationUser");
+my $cmd = "useradd -r -U -d $vacationSpool -m -s /sbin/nologin $vacationUser";
+if(run($cmd) != 0){
+	fail("Useradd exited non-zero");
+}else{
+	succeed();
+}
+
+runTest("mkdir -m 770 -p $mailboxDir", "creating mailbox dir '$mailboxDir' with mode 770");
+runTest("chmod a+w /var", "Setting /var world-writeable for Dovecot");
+runTest("chown -R $unixUser:$unixUser $mailboxDir", "Setting owner of $mailboxDir to $unixUser:$unixUser");
+
+
+# Creating postfix MySQL files:
+while ( my($file, $query) = each %postfixFiles ){
+	my $file = $postfixDir."/".$file.".cf";
+	start("Creating $file...");
+	my $f;
+	eval{open($f, ">", $file)};
+	if ($@){
+		fail("couldn't open $file for writing: $!");
+	}else{
+		print $f &postfixCredentials();
+		print $f $query;
+		close($f);
+		`chown postfix:postfix $file`;
+		`chmod 600 $file`;
+		succeed();
+	}
+}
+
+#Creating postfix transport maps file
+start("Creating tranport maps file $postfixTransportMapsFile");
+my $f;
+eval {open($f, ">", "/etc/postfix/transport") or die "Error opening transport file \"$postfixTransportMapsFile\" : $!";};
+if ($@){
+	print $@;
+	push(@errors,$postfixTransportMapsFile);
+}else{
+	print $f "$vacationDomain $vacationUser\n";
+	close($f);
+	my $cmd = "postmap /etc/postfix/transport 2>/dev/null >/dev/null";
+	if(run($cmd) != 0){
+		fail();
+	}else{
+		succeed();
+	}
+}
+
+
+# dovecot-sql.conf:
+my $write = 1;
+if ( -f $dovecotSqlFile ){
+	start("Backing up $dovecotSqlFile to $dovecotSqlBackupFile");
+	$write = &backup($dovecotSqlFile, $dovecotSqlBackupFile);
+}
+if($write == 1){
+	succeed();
+	start("Creating new $dovecotSqlFile");
+	my $f;
+	eval {open ($f, ">", $dovecotSqlFile) or die("Error opening dovecot SQL file $dovecotSqlFile : $!");};
+	if ($@){
+		fail($@);
+	}else{
+		print $f &dovecotDotSql($uid);
+		close($f);
+		run("chown root:root $dovecotSqlFile");
+		run("chmod 600 $dovecotSqlFile");
+		succeed();
+	}
+}else{ 
+	print " skipping";
+}
+
+
+
+# dovecot.conf
+start("Backing up $dovecotDotConfFile to $dovecotDotConfBackupFile");
+my $write = &backup($dovecotDotConfFile, $dovecotDotConfBackupFile);
+if ($write == 1){
+	print "Replacing $dovecotDotConfFile ...";
+	my $f;
+	eval{open ($f, ">", "$dovecotDotConfFile") or die()};
+	if($@){
+		fail("couldn't open $dovecotDotConfFile for writing:$!");
+	}else{
+		print $f &dovecotDotConf($uid);
+		close($f);
+		succeed();
+	}
+}
+
+# main.cf
+start("Checking for config in main.cf");
+my @lines; 
+my $lastrun;
+my $skipMainDotCf = 0;
+eval{
+	open(my $f, "<", $postfixMainDotCfFile) or die();
+	my @file = <$f>;
+	@lines = grep(/insertion by postfixdovecotmysql script (\d\d\d\d-\d\d-\d\d) \#/ , @file);
+	$lastrun = $1;
+};
+if($@){
+	fail("error opening $postfixMainDotCfFile for writing. Several other things are likely to go wrong");
+}
+if ( $#lines > 0 ){
+	succeed("Found insertion from $lastrun, skipping main.cf config");
+	$skipMainDotCf = 1;
+}else{
+	succeed();
+}
+
+start("Backing up $postfixMainDotCfFile to $postfixMainDotCfBackupFile");
+if ($skipMainDotCf == 1){
+	print "skipping $postfixMainDotCfFile\n";
+}else{	
+	my $write = &backup($postfixMainDotCfFile, $postfixMainDotCfBackupFile);
+	if ($write == 1){
+		succeed();
+		start("Appending to $postfixMainDotCfFile");
+		my $f;
+		eval {open ($f, ">>", $postfixMainDotCfFile) or die()};
+		if ($@){
+			fail("error opening postfix's main.cf ($postfixMainDotCfFile) for writing\n");
+		}else{
+			print $f &mainDotCf($uid,$gid);
+			close($f);
+			succeed();
+		}
+	}
+}
+
+
+start("Backing up $postfixMasterDotCfFile to $postfixMasterDotCfBackupFile");
+$write = &backup($postfixMasterDotCfFile, $postfixMasterDotCfBackupFile);
+if ($write == 1){
+	succeed();
+	start("Appending to $postfixMasterDotCfFile");
+	my $f;
+	eval{open ($f, ">>", $postfixMasterDotCfFile) or die($!)};
+	if($@){
+		fail("Couldn't open $postfixMasterDotCfFile for appending : $@");
+	}else{
+		print $f &masterDotCf;
+		print $f $vacationMasterDotCf;
+		close($f);
+		succeed();
+	}
+}else{
+	printYellow("Skipping $postfixMasterDotCfFile\n");
+}
+
+start("Creating auth socket dir");
+if (run("mkdir -p /var/spool/postfix/private/") == 0){
+	succeed();
+}else{
+	fail()
+}
+
+start("Backing up $saslauthdFile to $saslauthdBackupFile");
+
+$write = &backup($saslauthdFile, $saslauthdBackupFile);
+if ($write == 1){
+	succeed();
+	start("Configuring saslauthd");
+	succeed() if (&sasl());
+}	
+
+
+
+# MySQL setup:
+
+start("Creating db");
+my $mysqlconnect = "mysql -u $mysqluser -h $mysqlhost -p$mysqlpass";
+
+if (system("echo \"use $dbname\" | $mysqlconnect 2>/dev/null") == 0){
+	print "skip; db already exists\n";
+}else{
+	if(system("echo \"create database $dbname\" | $mysqlconnect") == 0){
+		succeed();
+	}else{
+		fail("'create database $dbname' returned non-zero");
+	}
+}
+
+start("Configuring db");
+if (system("echo \"grant all privileges on $dbname.* to $dbuser identified by \'$dbpass\'\" | $mysqlconnect") == 0){
+	succeed();
+}else{
+	fail("'grant all privileges on $dbname.* to $dbuser identified by \'$dbpass\'\\' returned non-zero\n");
+}
+
+
+start("Getting postfixadmin");
+if(getstore($postfixadminURL, "/var/www/postfixadmin.tar.gz")){
+	succeed();
+}else{
+	fail();
+}
+
+
+start("Extracting postfixadmin");
+if ( -d $postfixadminDir){
+	opendir (my $d, $postfixadminDir);
+ 	my @files = grep { !/^\./ && -f "$postfixadminDir/$_" } readdir($d);
+	if ($#files > 1){
+		fail("PostfixAdmin directory '$postfixadminDir' already has files in it. Not touching them\n");
+	}
+}else{
+	run("tar -C /var/www -xf /var/www/postfixadmin.tar.gz");
+	run("ln -s /var/www/postfixadmin-* $postfixadminDir");
+	succeed();
+}
+
+
+start("Configuring postfixadmin");
+open (my $f, "<", $postfixadminDir."/config.inc.php") or die "Error opening postifixadmin's config.inc.php";
+my @config = <$f>;
+close $f;
+my @newconfig;
+foreach(@config){
+	my $line = $_;
+	if ($line =~ /^\$CONF\[\'configured/){
+		$line = "\$CONF['configured'] = true;\n";
+
+	}elsif ($line =~ /^\$CONF\[\'database_user/){
+		$line = "\$CONF[\'database_user\'] = \'$dbuser\';\n";
+
+	}elsif ($line =~ /^\$CONF\[\'database_password/){
+		$line = "\$CONF[\'database_password\'] = \'$dbpass\';\n";
+
+	}elsif ($line =~ /^\$CONF\[\'database_name/){
+		$line = "\$CONF[\'database_name\'] = \'$dbname\';\n";
+
+	}elsif($line =~ /^\$CONF\[\'setup_password/){
+		$line =  "\$CONF[\'setup_password\'] = \'$postfixadminPasswordHash\';\n";
+
+	}elsif($line =~ /^\$CONF\[\'vacation\'/){
+		$line = "\$CONF[\'vacation\'] = \'YES\';\n";
+
+	}elsif($line =~ /^\$CONF\[\'domain_path\'/){
+		$line = "\$CONF[\'domain_path\'] = \'YES\';\n";
+
+	}elsif($line =~/^\$CONF\[\'domain_in_mailbox\'/){
+		$line = "\$CONF[\'domain_in_mailbox\'] = \'NO\';\n";
+
+	}elsif($line =~/^\$CONF\[\'aliases\'/){
+		$line = "\$CONF[\'aliases\'] = \'0\';\n";
+
+	}elsif($line =~/^\$CONF\[\'mailboxes\'/){
+		$line = "\$CONF[\'mailboxes\'] = \'0\';\n";
+
+	}elsif($line =~/^\$CONF\[\'maxquota\'/){
+		$line = "\$CONF[\'maxquota\'] = \'0\';\n";
+
+	}elsif($line =~/^\$CONF\[\'postfix_admin_url\'/){
+		$line = "\$CONF[\'postfix_admin_url\'] = \'http://$fqdn/postfixadmin\';\n";
+
+	}elsif($line =~/^\$CONF\[\'user_footer_link\'/){
+		$line = "\$CONF[\'user_footer_link\'] = \'http://$fqdn/postfixadmin/users/main.php';\n";
+
+	}elsif($line =~/^\$CONF\[\'user_footer_link\'/){
+		$line = "\$CONF[\'user_footer_link\'] = \'http://$fqdn/postfixadmin/users/main.php';\n";
+
+	}elsif($line =~/^\$CONF\[\'user_footer_link\'/){
+		$line = "\$CONF[\'user_footer_link\'] = \'http://$fqdn/postfixadmin/users/main.php';\n";
+
+	}elsif($line =~/^\$CONF\[\'user_footer_link\'/){
+		$line = "\$CONF[\'user_footer_link\'] = \'http://$fqdn/postfixadmin/users/main.php';\n";
+	}
+
+	$line =~ s/change-this-to-your.domain.tld/$fqdn/g;
+
+	push(@newconfig, $line);
+}
+
+
+open (my $f, ">", $postfixadminDir."/config.inc.php") or die "Error opening postfixadmin's config.inc.php for writing";
+print $f join("", @newconfig);
+close($f);
+succeed();
+
+
+start("Copying vacation script into place");
+$cmd = "cp /var/www/postfixadmin/VIRTUAL_VACATION/vacation.pl $vacationSpool";
+if (run($cmd) != 0){
+	fail("Error copying /var/www/postfixadmin/VIRTUAL_VACATION/vacation.pl to $vacationSpool : $!");
+}else{
+	succeed();
+}
+
+
+start("Setting permissions on vacation script");
+$cmd = "chown -R vacation:vacation $vacationSpool && chmod -R 700 $vacationSpool";
+if (run($cmd) != 0){
+	fail("Error setting permissions on vacation spool at $vacationSpool : $!");
+}else{
+	succeed();
+}
+
+start("Configuring vacation script");
+my $script = $vacationSpool."/vacation.pl";
+open(my $f, "<", $script);
+my @config = <$f>;
+close($f);
+my @newconfig;
+foreach my $line (@config){
+	if ($line =~ /our \$db_type =/){
+		$line = "our \$db_type = 'mysql';";
+	}elsif($line =~ /our \$db_username/){
+		$line = "our \$db_username = \'$dbuser\';\n";
+
+	}elsif($line =~ /our \$db_password/){
+		$line = "our \$db_password = \'$dbpass\';\n";
+
+	}elsif($line =~ /our \$db_name/){
+		$line = "our \$db_name = \'$dbname\';\n";
+
+	}elsif($line =~ /our \$vacation_domain/){
+		$line = "our \$vacation_domain=\'$vacationDomain\';\n";
+	}
+	push(@newconfig,$line);
+}
+open(my $f, ">", $script) or die "Error opening vacation script \"$script\" for writing : $!\n";
+print $f join("", @newconfig);
+close($f);
+succeed();
+
+start("Configuring munin graphs");
+my $cwd = cwd();
+chdir($muninActivePluginDir);
+foreach(glob($muninPluginGlob)){
+	system("ln -s $_");
+}
+succeed();
+
+print "\n\n";
+print "\tRESTARTING SERVICES\n";
+print "\tI'm about to restart some services.\n\tI cannot check they've come back up successfully.\n\tYou need to do this yourself";
+print "\n\n\n";
+
+print "Restarting postfix...";
+system("/etc/init.d/postfix restart 2>/dev/null >/dev/null");
+if ($? != 0){
+	printRed(" ERROR\n");
+}else{
+	printGreen(" done\n");
+}
+
+print "Restarting dovecot...";
+system("/etc/init.d/dovecot restart 2>/dev/null >/dev/null");
+if ($? != 0){
+	printRed(" ERROR\n");
+}else{
+	printGreen(" done\n");
+}
+
+print "Starting saslauthd...";
+system("/etc/init.d/saslauthd start 2>/dev/null >/dev/null");
+if ($? != 0){
+	printRed(" ERROR\n");
+}else{
+	printGreen(" done\n");
+}
+
+print "Restarting Apache2...";
+system("apache2ctl restart 2>/dev/null > /dev/null");
+
+if ($? != 0){
+	printRed(" ERROR\n");
+}else{
+	printGreen(" done\n");
+}
+
+print "Restarting Munin...";
+system("/etc/init.d/munin-node restart");
+if($? != 0){
+	printRed(" ERROR\n");
+}else{
+	printGreen(" done\n");
+}
+
+print "\n\n";
+
+printEndInstructions();
+exit 0;
+
+
+
+### Utility Subs ###
+
+# Basically a clone of the related functions from pfa:
+sub postfixadminCreatePassword {
+        my $salt =  time(). '*' . rand(6000);
+        my $password = createPassword(14);
+        my $encryptedPassword = $salt.':'.sha1_hex($salt.':'.$password);
+        return $password, $encryptedPassword;
+}
+
+# Generates a simple password:
+sub createPassword {
+        my $length = shift;
+        my @chars = ("A".."Z", "a".."z", 1..9);
+        my $password;
+        for (my $i = 0; $i < $length; $i++){
+                $password.= $chars[rand($#chars - 1)];
+        }  
+        return $password;
+}
+
+
+sub getMySQLCredentials(){
+	my $f;
+	my ($host,$user,$password);
+	if ( -f "/etc/debian_version"){
+		eval{open ($f, "<", "/etc/debian_version") or die()};
+		if (!$@){
+			my @file = <$f>;
+			if ($file[0] =~ /^5/){
+				# If we're here, we're on a Lenny box, and debian-sys-maint wont
+				# let us grant privileges, so we want to use root.
+				$user = "root";
+				$host = "localhost";
+				$password = undef;
+				return($host,$user,$password);
+			}
+		}
+	}		
+	# If we're here, we're on a non-Lenny box which, as far as I've tested, means Squeeze or Lucid. 
+	# We therefore just want to get the debian-sys-maint credentials:
+	open (my $f, "<", "/etc/mysql/debian.cnf") or die "Error opening /etc/mysql/debian.cnf for reading. Are you root? Is this Debian?";;
+	while(<$f>){
+		if (/host\s+=\s+(.+)\s+$/){
+			$host = $1;
+		}elsif (/user\s+=\s+(.+)\s+$/){
+			$user = $1;
+		}elsif (/password\s+=\s+(.+)\s+$/){
+			$password = $1;
+		}elsif (/\[mysql_upgrade]/){
+			last;
+		}		
+	}
+	close($f);
+	return ($host,$user,$password);
+}
+
+sub backup(){
+	my $from = shift;
+	my $to = shift;
+	my $return = 2;
+	copy($from, $to);
+	if ($!){
+		if ($ignoreBackupFailures != 1){
+			print "FAIL\n";
+			print "\tWould you like to write to it anyway? y/(n)\n\t";
+			chop(my $answer=<STDIN>);
+			if($answer=~/^y$/i){
+				$return = "1";
+			}else{
+				$return = "0";
+			}
+		}else{
+			print "FAIL but ignoring";
+			$return = "1";
+		}
+	}else{
+		$return = 1;
+	}
+	return $return;
+}
+
+sub start{
+	$task = shift;
+	print $task."... ";
+	_log($task);
+}
+sub fail{
+	my $explanation = shift;
+	printRed("FAILED");
+	print ": $explanation" if $explanation =~ /.+/;
+	print "\n";
+	push(@errors, $task);
+}
+sub succeed{
+	printGreen("Done\n");
+}
+
+sub runTest{
+	my $cmd = shift;
+	my $desc = shift;
+	start($desc);
+	my $return = run($cmd);
+	if($return == 0){
+		succeed();
+		return $return;
+	}else{
+		fail();
+	}
+}
+
+sub run{
+	my $cmd = shift;
+	_log("Command: $cmd");
+	$cmd.=" 2>&1 >> $f_log";
+	my $return =  system($cmd);
+	succeed() if $return = 0;
+	fail() if $return != 0;
+	return $return;
+}
+
+sub _print{
+	my $message = shift;
+	chomp $message;
+	print $message;
+	_log($message);
+}
+
+sub _log{
+#	return if $writeLog == 0;
+	my $message = shift;
+	chomp $message;
+	open(my $fh, ">>", $f_log) or warn("Eror opening logfile $f_log: $!");
+	print $fh $message ."\n";
+	close($fh);
+}
+
+sub _error{
+	my $message = shift;
+	my $exit = shift || 1;
+	chomp $message;
+	print STDERR $message."\n";
+	exit $exit;
+}
+
+sub availableDovecotVersion{
+  foreach(`apt-cache policy dovecot-common`){
+    if($_ =~ /Candidate:\s+(\S+)/){
+      my $version = $1; 
+      $version =~ s/^\d+://;
+      return $version;
+    }   
+  }
+  print STDERR "Couldn't determine available Dovecot version";
+  return "0";
+}
+
+sub printRed{
+	if(0 == $colour){
+		print @_;
+		return
+	}
+	print color 'red';
+	print @_;
+	print color 'reset';
+}
+
+sub printYellow{
+	if(0 == $colour){
+		print @_;
+		return
+	}
+	print color 'yellow';
+	print @_;
+	print color 'reset';
+}
+
+sub printGreen{
+	if(0 == $colour){
+		print @_;
+		return
+	}
+	print color 'green';
+	print @_;
+	print color 'reset';
+}
+
+sub printBlue{
+	if(0 == $colour){
+		print @_;
+		return
+	}
+	print color 'blue';
+	print @_;
+	print color 'reset';
+}
