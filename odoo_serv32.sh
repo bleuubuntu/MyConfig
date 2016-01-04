@@ -31,19 +31,19 @@ OE_CONFIG="$OE_USER-server"
 # Update Server
 #--------------------------------------------------
 echo -e "\n---- Update Server ----"
-sudo apt-get update
-sudo apt-get upgrade -y
-sudo apt-get install -y locales
+#sudo apt-get update
+#sudo apt-get upgrade -y
+#sudo apt-get install -y locales
 
 #--------------------------------------------------
 # Install PostgreSQL Server
 #--------------------------------------------------
 sudo dpkg-reconfigure locales
-sudo locale-gen en_US.UTF-8
-sudo /usr/sbin/update-locale LANG=en_US.UTF-8
+sudo locale-gen fr_FR.UTF-8
+sudo /usr/sbin/update-locale LANG=fr_FR.UTF-8
 
 echo -e "\n---- Set locales ----"
-echo 'LC_ALL=en_US.UTF-8' >> /etc/environment
+echo 'LC_ALL=fr_FR.UTF-8' >> /etc/environment
 
 echo -e "\n---- Install PostgreSQL Server ----"
 sudo apt-get install postgresql -y
