@@ -17,11 +17,14 @@
 ################################################################################
 
 OE_USER="oduser"
-OE_HOME="/opt/$OE_USER"
-OE_HOME_EXT="/opt/$OE_USER/$OE_USER-server"
+OE_HOME="/$OE_USER"
+OE_HOME_EXT="/$OE_USER/$OE_USER-server"
 
 #Enter version for checkout "9.0" for version 9.0,"8.0" for version 8.0, "7.0 (version 7), "master" for trunk
-OE_VERSION="9.0"
+OE_VERSION="10.0"
+
+#Set the default Odoo port (you still have to use -c /etc/odoo-server.conf for example to use this.)
+OE_PORT="8069"
 
 #set the superadmin passwordكلمةسوب
 OE_SUPERADMIN="SuperPass"
@@ -71,9 +74,15 @@ sudo chown $OE_USER:$OE_USER /var/log/$OE_USER
 # Install Basic Dependencies
 #--------------------------------------------------
 echo -e "\n---- Install tool packages ----"
-sudo apt-get install wget git python-pip python-imaging python-setuptools python-dev libxslt-dev libxml2-dev libldap2-dev libsasl2-dev node-less postgresql-server-dev-all -y
+sudo apt-get install wget subversion git zlib1g-dev python-pip python-imaging python-setuptools python-dev python-pychart python-unittest2 python-zsi python-webdav python-simplejson python-pybabel python-libxslt1 libxslt-dev libxml2-dev libldap2-dev libsasl2-dev node-less postgresql-server-dev-all bzr bzrtools gdebi-core -y
 
-echo -e "\n---- Install wkhtml and place on correct place for ODOO 8 ----"
+
+echo -e "\n--- Install other required packages"
+sudo apt-get install node-clean-css -y
+sudo apt-get install node-less -y
+
+
+echo -e "\n---- Install wkhtml and place on correct place for ODOO 8-9-10 ----"
 sudo wget http://download.gna.org/wkhtmltopdf/0.12/0.12.2.1/wkhtmltox-0.12.2.1_linux-trusty-amd64.deb
 sudo dpkg -i wkhtmltox-0.12.2.1_linux-trusty-amd64.deb
 sudo apt-get install -f -y
@@ -213,10 +222,15 @@ sudo mv ~/$OE_CONFIG /etc/init.d/$OE_CONFIG
 sudo chmod 755 /etc/init.d/$OE_CONFIG
 sudo chown root: /etc/init.d/$OE_CONFIG
 
+echo -e "* Change default xmlrpc port"
+sudo su root -c "echo 'xmlrpc_port = $OE_PORT' >> /etc/${OE_CONFIG}.conf"
+
+
 echo -e "* Start ODOO on Startup"
 sudo update-rc.d $OE_CONFIG defaults
  
 sudo service $OE_CONFIG start
-echo "Done! The ODOO server can be started with: service $OE_CONFIG start"
 
+echo "Done! The ODOO server can be started with: service $OE_CONFIG start"
+echo "Port: $OE_PORT"
 
