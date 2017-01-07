@@ -1,7 +1,6 @@
 #!/bin/bash
 ################################################################################
-# Script for Installation: ODOO 9.0 Community server on Ubuntu 14.04 LTS
-
+# Script for Installation: ODOO 10.0 Community server on Ubuntu 14.04 LTS
 # This script will install ODOO Server on
 # Ubuntu 16.04 Server
 #-------------------------------------------------------------------------------
@@ -102,7 +101,7 @@ sudo easy_install pyPdf vatnumber pydot psycogreen suds ofxparse
 # Configure ODOO
 #--------------------------------------------------
 echo -e "* Create server config file"
-sudo cp $OE_HOME_EXT/debian/openerp-server.conf /etc/$OE_CONFIG.conf
+sudo cp $OE_HOME_EXT/debian/odoo.conf /etc/$OE_CONFIG.conf
 sudo chown $OE_USER:$OE_USER /etc/$OE_CONFIG.conf
 sudo chmod 640 /etc/$OE_CONFIG.conf
 
