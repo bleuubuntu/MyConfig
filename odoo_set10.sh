@@ -58,9 +58,9 @@ sudo chown $OE_USER:$OE_USER /var/log/$OE_USER
 #--------------------------------------------------
 echo -e "\n---- Install tool packages ----"
 sudo apt-get install wget subversion git zlib1g-dev python-pip python-imaging python-setuptools python-dev python-pychart python-unittest2 python-zsi python-webdav python-simplejson python-pybabel python-libxslt1 libxslt-dev libxml2-dev libldap2-dev libsasl2-dev node-less postgresql-server-dev-all bzr bzrtools gdebi-core -y
-wget https://raw.githubusercontent.com/odoo/odoo/10.0/requirements.txt
+wget https://raw.githubusercontent.com/odoo/odoo/$OE_VERSION/requirements.txt
 sudo pip install -r requirements.txt
-wget https://raw.githubusercontent.com/odoo/odoo/10.0/doc/requirements.txt
+wget https://raw.githubusercontent.com/odoo/odoo/$OE_VERSION/doc/requirements.txt
 sudo pip install -r requirements.txt.1
 
 sudo apt-get install wget git python-pip gdebi-core -y
@@ -103,7 +103,7 @@ sudo cp /usr/local/bin/wkhtmltopdf /usr/bin
 sudo cp /usr/local/bin/wkhtmltoimage /usr/bin
 
 wget -O - https://nightly.odoo.com/odoo.key | apt-key add -
-echo "deb http://nightly.odoo.com/9.0/nightly/deb/ ./" >> /etc/apt/sources.list
+echo "deb http://nightly.odoo.com/$OE_VERSION/nightly/deb/ ./" >> /etc/apt/sources.list
 apt-get update && apt-get install odoo
 
 #--------------------------------------------------
