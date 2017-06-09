@@ -89,8 +89,12 @@ sudo su $OE_USER -c "mkdir $OE_HOME/custom/addons"
 echo -e "\n---- Setting permissions on home folder ----"
 sudo chown -R $OE_USER:$OE_USER $OE_HOME/*
 
+sudo su $OE_USER -c "mkdir /var/lib/odoo"
+sudo chown -R $OE_USER:$OE_USER /var/lib/odoo
 
-
+wget -O - https://nightly.odoo.com/odoo.key | apt-key add -
+echo "deb http://nightly.odoo.com/$OE_VERSION/nightly/deb/ ./" >> /etc/apt/sources.list
+apt-get update && apt-get install odoo
 
 
 
@@ -102,9 +106,6 @@ sudo dpkg -i wkhtmltox-0.12.2.1_linux-trusty-amd64.deb
 sudo cp /usr/local/bin/wkhtmltopdf /usr/bin
 sudo cp /usr/local/bin/wkhtmltoimage /usr/bin
 
-wget -O - https://nightly.odoo.com/odoo.key | apt-key add -
-echo "deb http://nightly.odoo.com/$OE_VERSION/nightly/deb/ ./" >> /etc/apt/sources.list
-apt-get update && apt-get install odoo
 
 #--------------------------------------------------
 # Configure ODOO
