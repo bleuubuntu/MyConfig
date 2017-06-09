@@ -12,7 +12,7 @@
 
 OE_USER="odoo"
 OE_HOME="/odoo"
-OE_HOME_EXT="/$OE_USER/$OE_USER-server"
+OE_HOME_EXT="/$OE_USER/$OE_USER"
 
 #Enter version for checkout "9.0" for version 9.0,"8.0" for version 8.0, "7.0 (version 7), "master" for trunk
 OE_VERSION="10.0"
@@ -22,7 +22,7 @@ OE_PORT="8069"
 
 #set the superadmin passwordكلمةسوب
 OE_SUPERADMIN="SuperPass"
-OE_CONFIG="$OE_USER-server"
+OE_CONFIG="$OE_USER"
 
 
 
@@ -82,6 +82,12 @@ sudo apt-get install python-gevent -y
 # Install ODOO
 #--------------------------------------------------
 
+echo -e "\n==== Download ODOO Server ===="
+cd $OE_HOME
+sudo su $OE_USER -c "git clone --depth 1 --single-branch --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/"
+cd -
+
+
 echo -e "\n---- Create custom module directory ----"
 sudo su $OE_USER -c "mkdir $OE_HOME/custom"
 sudo su $OE_USER -c "mkdir $OE_HOME/custom/addons"
@@ -91,11 +97,6 @@ sudo chown -R $OE_USER:$OE_USER $OE_HOME/*
 
 sudo su $OE_USER -c "mkdir /var/lib/odoo"
 sudo chown -R $OE_USER:$OE_USER /var/lib/odoo
-
-wget -O - https://nightly.odoo.com/odoo.key | apt-key add -
-echo "deb http://nightly.odoo.com/$OE_VERSION/nightly/deb/ ./" >> /etc/apt/sources.list
-apt-get update && apt-get install odoo
-
 
 
 echo -e "\n---- Install wkhtml and place on correct place for ODOO 8-9-10 ----"
@@ -110,6 +111,10 @@ sudo cp /usr/local/bin/wkhtmltoimage /usr/bin
 #--------------------------------------------------
 # Configure ODOO
 #--------------------------------------------------
+suod mkdir /etc/odoo/
+sudo cp /odoo/debian/odoo.conf /etc/odoo/odoo.conf
+sudo chown $OE_USER:$OE_USER /etc/odoo/odoo.conf
+sudo chmod 640 /etc/odoo/odoo.conf
 
 echo -e "* Change server config file"
 echo -e "** Remove unwanted lines"
@@ -121,10 +126,18 @@ echo -e "** Add correct lines"
 sudo su root -c "echo 'db_user = $OE_USER' >> /etc/odoo/odoo.conf"
 sudo su root -c "echo 'admin_passwd = $OE_SUPERADMIN' >> /etc/odoo/odoo.conf"
 sudo su root -c "echo 'addons_path=$OE_HOME_EXT/addons,$OE_HOME/custom/addons' >> /etc/odoo/odoo.conf"
-
-
+sudo su root -c "echo 'logfile = /var/log/$OE_USER/$OE_CONFIG$1.log' >> /etc/odoo/odoo.conf"
 echo -e "* Change default xmlrpc port"
 sudo su root -c "echo 'xmlrpc_port = $OE_PORT' >> /etc/odoo/odoo.conf"
+
+=====================================
+echo -e "* Create startup file"
+sudo su root -c "echo '#!/bin/sh' >> $OE_HOME/start.sh"
+sudo su root -c "echo 'sudo -u $OE_USER $OE_HOME/odoo-bin --config=/etc/odoo/odoo.conf' >> $OE_HOME/start.sh"
+sudo chmod 755 $OE_HOME_EXT/start.sh
+
+
+
 
 echo "-----------------------------------------------------------"
 echo "Done! The Odoo server is up and running. Specifications:"
