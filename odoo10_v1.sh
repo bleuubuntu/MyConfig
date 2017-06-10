@@ -111,8 +111,8 @@ sudo cp /usr/local/bin/wkhtmltoimage /usr/bin
 #--------------------------------------------------
 # Configure ODOO
 #--------------------------------------------------
-suod mkdir /etc/odoo/
-sudo cp /odoo/debian/odoo.conf /etc/odoo/odoo.conf
+sudo mkdir /etc/odoo/
+sudo cp /odoo/odoo/debian/odoo.conf /etc/odoo/odoo.conf
 sudo chown $OE_USER:$OE_USER /etc/odoo/odoo.conf
 sudo chmod 640 /etc/odoo/odoo.conf
 
@@ -130,11 +130,33 @@ sudo su root -c "echo 'logfile = /var/log/$OE_USER/$OE_CONFIG$1.log' >> /etc/odo
 echo -e "* Change default xmlrpc port"
 sudo su root -c "echo 'xmlrpc_port = $OE_PORT' >> /etc/odoo/odoo.conf"
 
-=====================================
 echo -e "* Create startup file"
 sudo su root -c "echo '#!/bin/sh' >> $OE_HOME/start.sh"
 sudo su root -c "echo 'sudo -u $OE_USER $OE_HOME/odoo-bin --config=/etc/odoo/odoo.conf' >> $OE_HOME/start.sh"
 sudo chmod 755 $OE_HOME_EXT/start.sh
+
+#--------------------------------------------------
+# Adding ODOO as a deamon (initscript)
+#--------------------------------------------------
+
+
+
+
+
+
+
+
+echo -e "* Security Init File"
+sudo mv ~/$OE_CONFIG /etc/init.d/$OE_CONFIG
+sudo chmod 755 /etc/init.d/$OE_CONFIG
+sudo chown root: /etc/init.d/$OE_CONFIG
+
+echo -e "* Start ODOO on Startup"
+sudo update-rc.d $OE_CONFIG defaults
+ 
+sudo service $OE_CONFIG start
+echo "Done! The ODOO server can be started with: service $OE_CONFIG start"
+
 
 
 
