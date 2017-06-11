@@ -9,6 +9,10 @@
 # sudo sh
 # sh odoo_set10.sh
 ################################################################################
+sudo apt-get update
+sudo apt-get upgrade -y
+sudo apt-get install -y locales
+
 
 OE_USER="odoo"
 OE_HOME="/odoo"
