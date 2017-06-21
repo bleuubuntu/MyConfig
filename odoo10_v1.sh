@@ -38,7 +38,7 @@ echo -e "\n---- Install PostgreSQL Server ----"
 # sudo apt-get install postgresql -y
 
 echo -e "\n---- PostgreSQL $PG_VERSION Settings  ----"
-sudo sed -i s/"#listen_addresses = 'localhost'"/"listen_addresses = '*'"/g /etc/postgresql/9.6/main/postgresql.conf
+sudo sed -i s/"#listen_addresses = 'localhost'"/"listen_addresses = '*'"/g /etc/postgresql/9.5/main/postgresql.conf
 
 echo -e "\n---- Creating the ODOO PostgreSQL User  ----"
 sudo su - postgres -c "createuser -s $OE_USER" 2> /dev/null || true
@@ -99,7 +99,7 @@ sudo su $OE_USER -c "mkdir $OE_HOME/custom/addons"
 echo -e "\n---- Setting permissions on home folder ----"
 sudo chown -R $OE_USER:$OE_USER $OE_HOME/*
 
-sudo su $OE_USER -c "mkdir /var/lib/odoo"
+sudo su mkdir /var/lib/odoo
 sudo chown -R $OE_USER:$OE_USER /var/lib/odoo
 
 
@@ -135,8 +135,8 @@ echo -e "* Change default xmlrpc port"
 sudo su root -c "echo 'xmlrpc_port = $OE_PORT' >> /etc/odoo/odoo.conf"
 
 echo -e "* Create startup file"
-sudo su root -c "echo '#!/bin/sh' >> $OE_HOME/start.sh"
-sudo su root -c "echo 'sudo -u $OE_USER $OE_HOME/odoo-bin --config=/etc/odoo/odoo.conf' >> $OE_HOME/start.sh"
+sudo echo '#!/bin/sh' >> $OE_HOME/start.sh
+sudo echo 'sudo -u $OE_USER $OE_HOME/odoo-bin --config=/etc/odoo/odoo.conf' >> $OE_HOME/start.sh
 sudo chmod 755 $OE_HOME_EXT/start.sh
 
 #--------------------------------------------------
