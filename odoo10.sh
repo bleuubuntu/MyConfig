@@ -164,7 +164,7 @@ echo '# Specify the user name (Default: odoo).' >> ~/$OE_CONFIG
 echo "USER=$OE_USER" >> ~/$OE_CONFIG
 echo '' >> ~/$OE_CONFIG
 echo '# Specify an alternate config file (Default: /etc/openerp-server.conf).' >> ~/$OE_CONFIG
-echo "CONFIGFILE=\"/etc/$OE_CONFIG.conf\"" >> ~/$OE_CONFIG
+echo "CONFIGFILE=\"/etc/odoo/$OE_CONFIG.conf\"" >> ~/$OE_CONFIG
 echo '' >> ~/$OE_CONFIG
 echo '# pidfile' >> ~/$OE_CONFIG
 echo 'PIDFILE=/var/run/$NAME.pid' >> ~/$OE_CONFIG
