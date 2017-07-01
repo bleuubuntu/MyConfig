@@ -156,7 +156,7 @@ echo '# Short-Description: Enterprise Business Applications' >> ~/$OE_CONFIG
 echo '# Description: ODOO Business Applications' >> ~/$OE_CONFIG
 echo '### END INIT INFO' >> ~/$OE_CONFIG
 echo 'PATH=/bin:/sbin:/usr/bin' >> ~/$OE_CONFIG
-echo "DAEMON=$OE_HOME_EXT/openerp-server" >> ~/$OE_CONFIG
+echo "DAEMON=$OE_HOME_EXT/odoo-bin" >> ~/$OE_CONFIG
 echo "NAME=$OE_CONFIG" >> ~/$OE_CONFIG
 echo "DESC=$OE_CONFIG" >> ~/$OE_CONFIG
 echo '' >> ~/$OE_CONFIG
