@@ -137,7 +137,7 @@ sudo su root -c "echo 'xmlrpc_port = $OE_PORT' >> /etc/odoo/odoo.conf"
 echo -e "* Create startup file"
 sudo echo '#!/bin/sh' >> $OE_HOME/start.sh
 sudo echo 'sudo -u $OE_USER $OE_HOME/odoo-bin --config=/etc/odoo/odoo.conf' >> $OE_HOME/start.sh
-sudo chmod 755 $OE_HOME_EXT/start.sh
+sudo chmod 755 $OE_HOME/start.sh
 
 #--------------------------------------------------
 # Adding ODOO as a deamon (initscript)
