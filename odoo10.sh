@@ -14,7 +14,7 @@ sudo apt-get upgrade -y
 sudo apt-get install -y locales
 
 
-OE_USER="odoo"
+OE_USER="odoo10"
 OE_HOME="/odoo"
 OE_HOME_EXT="/$OE_USER/$OE_USER"
 
@@ -91,15 +91,14 @@ cd $OE_HOME
 sudo su $OE_USER -c "git clone --depth 1 --single-branch --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/"
 cd -
 
+echo -e "\n---- Setting permissions on home folder ----"
+sudo chown -R $OE_USER:$OE_USER $OE_HOME/*
 
 echo -e "\n---- Create custom module directory ----"
 sudo su $OE_USER -c "mkdir $OE_HOME/custom"
 sudo su $OE_USER -c "mkdir $OE_HOME/custom/addons"
 
-echo -e "\n---- Setting permissions on home folder ----"
-sudo chown -R $OE_USER:$OE_USER $OE_HOME/*
-
-sudo su mkdir /var/lib/odoo
+sudo mkdir /var/lib/odoo
 sudo chown -R $OE_USER:$OE_USER /var/lib/odoo
 
 
@@ -115,28 +114,28 @@ sudo cp /usr/local/bin/wkhtmltoimage /usr/bin
 #--------------------------------------------------
 # Configure ODOO
 #--------------------------------------------------
-sudo mkdir /etc/odoo/
-sudo cp /odoo/odoo/debian/odoo.conf /etc/odoo/odoo.conf
-sudo chown $OE_USER:$OE_USER /etc/odoo/odoo.conf
-sudo chmod 640 /etc/odoo/odoo.conf
+sudo mkdir /etc/$OE_USER/
+sudo cp $OE_HOME_EXT/debian/odoo.conf /etc/$OE_USER/odoo.conf
+sudo chown $OE_USER:$OE_USER /etc/$OE_USER/odoo.conf
+sudo chmod 640 /etc/$OE_USER/odoo.conf
 
 echo -e "* Change server config file"
 echo -e "** Remove unwanted lines"
-sudo sed -i "/db_user/d" /etc/odoo/odoo.conf
-sudo sed -i "/admin_passwd/d" /etc/odoo/odoo.conf
-sudo sed -i "/addons_path/d" /etc/odoo/odoo.conf
+sudo sed -i "/db_user/d" /etc/$OE_USER/odoo.conf
+sudo sed -i "/admin_passwd/d" /etc/$OE_USER/odoo.conf
+sudo sed -i "/addons_path/d" /etc/$OE_USER/odoo.conf
 
 echo -e "** Add correct lines"
-sudo su root -c "echo 'db_user = $OE_USER' >> /etc/odoo/odoo.conf"
-sudo su root -c "echo 'admin_passwd = $OE_SUPERADMIN' >> /etc/odoo/odoo.conf"
-sudo su root -c "echo 'addons_path=$OE_HOME_EXT/addons,$OE_HOME/custom/addons' >> /etc/odoo/odoo.conf"
-sudo su root -c "echo 'logfile = /var/log/$OE_USER/$OE_CONFIG$1.log' >> /etc/odoo/odoo.conf"
+sudo su root -c "echo 'db_user = $OE_USER' >> /etc/$OE_USER/odoo.conf"
+sudo su root -c "echo 'admin_passwd = $OE_SUPERADMIN' >> /etc/$OE_USER/odoo.conf"
+sudo su root -c "echo 'addons_path=$OE_HOME_EXT/addons,$OE_HOME/custom/addons' >> /etc/$OE_USER/odoo.conf"
+sudo su root -c "echo 'logfile = /var/log/$OE_USER/$OE_CONFIG$1.log' >> /etc/$OE_USER/odoo.conf"
 echo -e "* Change default xmlrpc port"
-sudo su root -c "echo 'xmlrpc_port = $OE_PORT' >> /etc/odoo/odoo.conf"
+sudo su root -c "echo 'xmlrpc_port = $OE_PORT' >> /etc/$OE_USER/odoo.conf"
 
 echo -e "* Create startup file"
 sudo echo '#!/bin/sh' >> $OE_HOME/start.sh
-sudo echo 'sudo -u $OE_USER $OE_HOME/odoo-bin --config=/etc/odoo/odoo.conf' >> $OE_HOME/start.sh
+sudo echo 'sudo -u $OE_USER $OE_HOME_EXT/odoo-bin --config=/etc/$OE_USER/odoo.conf' >> $OE_HOME/start.sh
 sudo chmod 755 $OE_HOME/start.sh
 
 #--------------------------------------------------
@@ -164,7 +163,7 @@ echo '# Specify the user name (Default: odoo).' >> ~/$OE_CONFIG
 echo "USER=$OE_USER" >> ~/$OE_CONFIG
 echo '' >> ~/$OE_CONFIG
 echo '# Specify an alternate config file (Default: /etc/openerp-server.conf).' >> ~/$OE_CONFIG
-echo "CONFIGFILE=\"/etc/odoo/$OE_CONFIG.conf\"" >> ~/$OE_CONFIG
+echo "CONFIGFILE=\"/etc/$OE_USER/$OE_CONFIG.conf\"" >> ~/$OE_CONFIG
 echo '' >> ~/$OE_CONFIG
 echo '# pidfile' >> ~/$OE_CONFIG
 echo 'PIDFILE=/var/run/$NAME.pid' >> ~/$OE_CONFIG
