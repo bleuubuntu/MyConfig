@@ -115,27 +115,27 @@ sudo cp /usr/local/bin/wkhtmltoimage /usr/bin
 # Configure ODOO
 #--------------------------------------------------
 sudo mkdir /etc/$OE_USER/
-sudo cp $OE_HOME_EXT/debian/odoo.conf /etc/$OE_USER/odoo.conf
-sudo chown $OE_USER:$OE_USER /etc/$OE_USER/odoo.conf
-sudo chmod 640 /etc/$OE_USER/odoo.conf
+sudo cp $OE_HOME_EXT/debian/odoo.conf /etc/$OE_USER/$OE_CONFIG.conf
+sudo chown $OE_USER:$OE_USER /etc/$OE_USER/$OE_CONFIG.conf
+sudo chmod 640 /etc/$OE_USER/$OE_CONFIG.conf
 
 echo -e "* Change server config file"
 echo -e "** Remove unwanted lines"
-sudo sed -i "/db_user/d" /etc/$OE_USER/odoo.conf
-sudo sed -i "/admin_passwd/d" /etc/$OE_USER/odoo.conf
-sudo sed -i "/addons_path/d" /etc/$OE_USER/odoo.conf
+sudo sed -i "/db_user/d" /etc/$OE_USER/$OE_CONFIG.conf
+sudo sed -i "/admin_passwd/d" /etc/$OE_USER/$OE_CONFIG.conf
+sudo sed -i "/addons_path/d" /etc/$OE_USER/$OE_CONFIG.conf
 
 echo -e "** Add correct lines"
-sudo su root -c "echo 'db_user = $OE_USER' >> /etc/$OE_USER/odoo.conf"
-sudo su root -c "echo 'admin_passwd = $OE_SUPERADMIN' >> /etc/$OE_USER/odoo.conf"
-sudo su root -c "echo 'addons_path=$OE_HOME_EXT/addons,$OE_HOME/custom/addons' >> /etc/$OE_USER/odoo.conf"
-sudo su root -c "echo 'logfile = /var/log/$OE_USER/$OE_CONFIG$1.log' >> /etc/$OE_USER/odoo.conf"
+sudo su root -c "echo 'db_user = $OE_USER' >> /etc/$OE_USER/$OE_CONFIG.conf"
+sudo su root -c "echo 'admin_passwd = $OE_SUPERADMIN' >> /etc/$OE_USER/$OE_CONFIG.conf"
+sudo su root -c "echo 'addons_path=$OE_HOME_EXT/addons,$OE_HOME/custom/addons' >> /etc/$OE_USER/$OE_CONFIG.conf"
+sudo su root -c "echo 'logfile = /var/log/$OE_USER/$OE_CONFIG$1.log' >> /etc/$OE_USER/$OE_CONFIG.conf"
 echo -e "* Change default xmlrpc port"
-sudo su root -c "echo 'xmlrpc_port = $OE_PORT' >> /etc/$OE_USER/odoo.conf"
+sudo su root -c "echo 'xmlrpc_port = $OE_PORT' >> /etc/$OE_USER/$OE_CONFIG.conf"
 
 echo -e "* Create startup file"
 sudo echo '#!/bin/sh' >> $OE_HOME/start.sh
-sudo echo 'sudo -u $OE_USER $OE_HOME_EXT/odoo-bin --config=/etc/$OE_USER/odoo.conf' >> $OE_HOME/start.sh
+sudo echo 'sudo -u $OE_USER $OE_HOME_EXT/odoo-bin --config=/etc/$OE_USER/$OE_CONFIG.conf' >> $OE_HOME/start.sh
 sudo chmod 755 $OE_HOME/start.sh
 
 #--------------------------------------------------
