@@ -18,7 +18,7 @@ OE_HOME_EXT="/$OE_HOME/$OE_USER"
 OE_VERSION="10.0"
 
 #Set the default Odoo port (you still have to use -c /etc/odoo-server.conf for example to use this.)
-OE_PORT="8069"
+OE_PORT="806
 
 #set the superadmin passwordكلمةسوب
 OE_SUPERADMIN="SuperPass"
@@ -29,12 +29,6 @@ OE_CONFIG="$OE_USER"
 #--------------------------------------------------
 # Install PostgreSQL Server
 #--------------------------------------------------
-
-echo -e "\n---- Install PostgreSQL Server ----"
-# sudo apt-get install postgresql -y
-
-echo -e "\n---- PostgreSQL $PG_VERSION Settings  ----"
-sudo sed -i s/"#listen_addresses = 'localhost'"/"listen_addresses = '*'"/g /etc/postgresql/9.5/main/postgresql.conf
 
 echo -e "\n---- Creating the ODOO PostgreSQL User  ----"
 sudo su - postgres -c "createuser -s $OE_USER" 2> /dev/null || true
@@ -50,25 +44,21 @@ sudo adduser --system --quiet --shell=/bin/bash --home=$OE_HOME --gecos 'ODOO' -
 sudo adduser $OE_USER sudo
 
 echo -e "\n---- Create Log directory ----"
-sudo su mkdir /var/log/$OE_USER
+sudo mkdir /var/log/$OE_USER
 sudo chown $OE_USER:$OE_USER /var/log/$OE_USER
 
-
-echo -e "\n---- Create custom module directory ----"
-sudo su $OE_USER -c "mkdir $OE_HOME/custom"
-sudo su $OE_USER -c "mkdir $OE_HOME/custom/addons"
 
 echo -e "\n---- Setting permissions on home folder ----"
 sudo chown -R $OE_USER:$OE_USER $OE_HOME/*
 
-sudo su mkdir /var/lib/$OE_USER
+sudo mkdir /var/lib/$OE_USER
 sudo chown -R $OE_USER:$OE_USER /var/lib/$OE_USER
 
 
 # Configure ODOO
 #--------------------------------------------------
 sudo mkdir /etc/odoo/
-sudo cp /$OE_HOME_EXT/debian/odoo.conf /etc/odoo/${OE_CONFIG}.conf
+sudo cp /$OE_HOME/odoo/debian/odoo.conf /etc/odoo/${OE_CONFIG}.conf
 sudo chown $OE_USER:$OE_USER /etc/odoo/${OE_CONFIG}.conf
 sudo chmod 640 /etc/odoo/${OE_CONFIG}.conf
 
