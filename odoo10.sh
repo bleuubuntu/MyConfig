@@ -14,12 +14,12 @@ sudo apt-get upgrade -y
 sudo apt-get install -y locales
 
 
-OE_USER="odoo10"
+OE_USER="odoo11"
 OE_HOME="/odoo"
 OE_HOME_EXT="/$OE_USER/$OE_USER"
 
-#Enter version for checkout "9.0" for version 9.0,"8.0" for version 8.0, "7.0 (version 7), "master" for trunk
-OE_VERSION="10.0"
+
+OE_VERSION="11.0"
 
 #Set the default Odoo port (you still have to use -c /etc/odoo-server.conf for example to use this.)
 OE_PORT="8069"
@@ -34,11 +34,17 @@ OE_CONFIG="$OE_USER"
 # Install PostgreSQL Server
 #--------------------------------------------------
 
-echo -e "\n---- Install PostgreSQL Server ----"
+echo -e "\n---- Install PostgreSQL Server 9.6 ----"
 # sudo apt-get install postgresql -y
+echo 'deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main' >> /etc/apt/sources.list.d/pgdg.list
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+
+sudo apt-get update
+
+sudo apt-get install postgresql-9.6
 
 echo -e "\n---- PostgreSQL $PG_VERSION Settings  ----"
-sudo sed -i s/"#listen_addresses = 'localhost'"/"listen_addresses = '*'"/g /etc/postgresql/9.5/main/postgresql.conf
+sudo sed -i s/"#listen_addresses = 'localhost'"/"listen_addresses = '*'"/g /etc/postgresql/9.6/main/postgresql.conf
 
 echo -e "\n---- Creating the ODOO PostgreSQL User  ----"
 sudo su - postgres -c "createuser -s $OE_USER" 2> /dev/null || true
@@ -61,25 +67,41 @@ sudo chown $OE_USER:$OE_USER /var/log/$OE_USER
 # Install Basic Dependencies
 #--------------------------------------------------
 echo -e "\n---- Install tool packages ----"
-sudo apt-get install wget subversion git libfontenc1 libxfont1 xfonts-75dpi xfonts-base xfonts-encodings xfonts-utils zlib1g-dev python-xlsxwriter python-pip python-imaging python-setuptools python-dev python-pychart python-unittest2 python-zsi python-webdav python-simplejson python-pybabel python-libxslt1 libxslt-dev libxml2-dev libldap2-dev libsasl2-dev node-less postgresql-server-dev-all bzr bzrtools gdebi-core -y
-wget https://raw.githubusercontent.com/odoo/odoo/$OE_VERSION/requirements.txt
-sudo pip install -r requirements.txt
-wget https://raw.githubusercontent.com/odoo/odoo/$OE_VERSION/doc/requirements.txt
-sudo pip install -r requirements.txt.1
-
-sudo apt-get install wget git python-pip gdebi-core -y
-	
-echo -e "\n---- Install python packages ----"
-sudo apt-get install python-dateutil python-feedparser python-ldap python-libxslt1 python-lxml python-mako python-openid python-psycopg2 python-pybabel python-pychart python-pydot python-pyparsing python-reportlab python-simplejson python-tz python-vatnumber python-vobject python-webdav python-werkzeug python-xlwt python-yaml python-zsi python-docutils python-psutil python-mock python-unittest2 python-jinja2 python-pypdf python-decorator python-requests python-passlib python-pil -y python-suds
-	
-echo -e "\n---- Install python libraries ----"
-sudo pip install gdata psycogreen ofxparse vatnumber
+sudo apt-get install python3-pip
 
 
-echo -e "\n--- Install other required packages"
-sudo apt-get install node-clean-css -y
-sudo apt-get install node-less -y
-sudo apt-get install python-gevent -y
+pip3 install Babel decorator docutils ebaysdk feedparser gevent greenlet html2text Jinja2 lxml Mako MarkupSafe mock num2words ofxparse passlib Pillow psutil psycogreen psycopg2 pydot pyparsing PyPDF2 pyserial python-dateutil python-openid pytz pyusb PyYAML qrcode reportlab requests six suds-jurko vatnumber vobject Werkzeug XlsxWriter xlwt xlrd
+
+#--------------------------------------------------
+# Odoo Web Dependencies
+#--------------------------------------------------
+
+sudo apt-get install -y npm
+
+sudo ln -s /usr/bin/nodejs /usr/bin/node
+
+sudo npm install -g less less-plugin-clean-css
+
+sudo apt-get install node-less
+
+#--------------------------------------------------
+cd /opt/odoo
+
+sudo wget https://pypi.python.org/packages/a8/70/bd554151443fe9e89d9a934a7891aaffc63b9cb5c7d608972919a002c03c/gdata-2.0.18.tar.gz
+
+sudo tar zxvf gdata-2.0.18.tar.gz
+
+sudo chown -R odoo: gdata-2.0.18
+
+sudo -s
+
+cd gdata-2.0.18/
+
+python setup.py install
+
+exit
+
+
 
 
 #--------------------------------------------------
