@@ -9,13 +9,11 @@
 # sudo sh
 # sh odoo_set10.sh
 ################################################################################
-sudo apt-get update
-sudo apt-get upgrade -y
-sudo apt-get install -y locales
+
 
 
 OE_USER="odoo10"
-OE_HOME="/odoo"
+OE_HOME="/odoo10"
 OE_HOME_EXT="/$OE_USER/$OE_USER"
 
 #Enter version for checkout "9.0" for version 9.0,"8.0" for version 8.0, "7.0 (version 7), "master" for trunk
@@ -35,13 +33,13 @@ OE_CONFIG="$OE_USER"
 #--------------------------------------------------
 
 echo -e "\n---- Install PostgreSQL Server ----"
-# sudo apt-get install postgresql -y
+sudo apt-get install postgresql -y
 
 echo -e "\n---- PostgreSQL $PG_VERSION Settings  ----"
 sudo sed -i s/"#listen_addresses = 'localhost'"/"listen_addresses = '*'"/g /etc/postgresql/9.5/main/postgresql.conf
 
 echo -e "\n---- Creating the ODOO PostgreSQL User  ----"
-sudo su - postgres -c "createuser -s $OE_USER" 2> /dev/null || true
+postgres -c "createuser -s $OE_USER" 2> /dev/null || true
 
 sudo service postgresql restart
 
@@ -50,7 +48,7 @@ sudo service postgresql restart
 #--------------------------------------------------
 
 echo -e "\n---- Create ODOO system user ----"
-sudo adduser --system --quiet --shell=/bin/bash --home=$OE_HOME --gecos 'ODOO' --group $OE_USER
+adduser --system --quiet --shell=/bin/bash --home=$OE_HOME --gecos 'ODOO' --group $OE_USER
 
 echo -e "\n---- Create Log directory ----"
 sudo mkdir /var/log/$OE_USER
@@ -103,7 +101,7 @@ sudo chown -R $OE_USER:$OE_USER /var/lib/odoo
 
 
 echo -e "\n---- Install wkhtml and place on correct place for ODOO 8-9-10 ----"
-sudo wget http://downloads.wkhtmltopdf.org/0.12/0.12.2.1/wkhtmltox-0.12.2.1_linux-trusty-amd64.deb
+sudo wget http://downloads.wkhtmltopdf.org/0.12/0.12.2.1/wkhtmltox-0.12.2.1_linux-trusty-amd64.deb --no-check-cerftificate
 sudo dpkg -i wkhtmltox-0.12.2.1_linux-trusty-amd64.deb
 sudo apt-get install -f -y
 sudo dpkg -i wkhtmltox-0.12.2.1_linux-trusty-amd64.deb
