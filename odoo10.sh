@@ -34,17 +34,17 @@ OE_CONFIG="$OE_USER"
 # Install PostgreSQL Server
 #--------------------------------------------------
 
-echo -e "\n---- Install PostgreSQL Server 9.6 ----"
+echo -e "\n---- Install PostgreSQL 10 Serv ----"
 # sudo apt-get install postgresql -y
 echo 'deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main' >> /etc/apt/sources.list.d/pgdg.list
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
 
 sudo apt-get update
 
-sudo apt-get install postgresql-9.6
+sudo apt-get install postgresql postgresql-contrib
 
 echo -e "\n---- PostgreSQL $PG_VERSION Settings  ----"
-sudo sed -i s/"#listen_addresses = 'localhost'"/"listen_addresses = '*'"/g /etc/postgresql/9.6/main/postgresql.conf
+sudo sed -i s/"#listen_addresses = 'localhost'"/"listen_addresses = '*'"/g /etc/postgresql/10/main/postgresql.conf
 
 echo -e "\n---- Creating the ODOO PostgreSQL User  ----"
 sudo su - postgres -c "createuser -s $OE_USER" 2> /dev/null || true
