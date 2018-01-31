@@ -14,7 +14,7 @@ sudo apt-get upgrade -y
 sudo apt-get install -y locales
 
 
-OE_USER="odoo11"
+OE_USER="odoo"
 OE_HOME="/odoo"
 OE_HOME_EXT="/$OE_USER/$OE_USER"
 
@@ -110,15 +110,17 @@ exit
 
 echo -e "\n==== Download ODOO Server ===="
 cd $OE_HOME
-sudo su $OE_USER -c "git clone --depth 1 --single-branch --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/"
+git clone --depth 1 --single-branch --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/
 cd -
+
+echo -e "\n---- Create custom module directory ----"
+mkdir $OE_HOME/custom
+mkdir $OE_HOME/custom/addons
+
+
 
 echo -e "\n---- Setting permissions on home folder ----"
 sudo chown -R $OE_USER:$OE_USER $OE_HOME/*
-
-echo -e "\n---- Create custom module directory ----"
-sudo su $OE_USER -c "mkdir $OE_HOME/custom"
-sudo su $OE_USER -c "mkdir $OE_HOME/custom/addons"
 
 sudo mkdir /var/lib/odoo
 sudo chown -R $OE_USER:$OE_USER /var/lib/odoo
