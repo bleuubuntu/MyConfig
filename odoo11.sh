@@ -84,20 +84,22 @@ sudo npm install -g less less-plugin-clean-css
 
 sudo apt-get install node-less
 
+pip install gdata
+
 #--------------------------------------------------
-cd /opt/odoo
+# cd /opt/odoo
 
-sudo wget https://pypi.python.org/packages/a8/70/bd554151443fe9e89d9a934a7891aaffc63b9cb5c7d608972919a002c03c/gdata-2.0.18.tar.gz
+# sudo wget https://pypi.python.org/packages/a8/70/bd554151443fe9e89d9a934a7891aaffc63b9cb5c7d608972919a002c03c/gdata-2.0.18.tar.gz
 
-sudo tar zxvf gdata-2.0.18.tar.gz
+# sudo tar zxvf gdata-2.0.18.tar.gz
 
-sudo chown -R odoo: gdata-2.0.18
+# sudo chown -R odoo: gdata-2.0.18
 
-sudo -s
+# sudo -s
 
-cd gdata-2.0.18/
+# cd gdata-2.0.18/
 
-python setup.py install
+# python setup.py install
 
 
 #--------------------------------------------------
