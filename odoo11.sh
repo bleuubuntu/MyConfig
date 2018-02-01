@@ -99,10 +99,6 @@ cd gdata-2.0.18/
 
 python setup.py install
 
-exit
-
-
-
 
 #--------------------------------------------------
 # Install ODOO
