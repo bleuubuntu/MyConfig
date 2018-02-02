@@ -70,7 +70,7 @@ echo -e "\n---- Install tool packages ----"
 sudo apt-get install python3-pip
 
 
-pip3 install Babel decorator docutils ebaysdk feedparser gevent greenlet html2text Jinja2 lxml Mako MarkupSafe mock num2words ofxparse passlib Pillow psutil psycogreen psycopg2 pydot pyparsing PyPDF2 pyserial python-dateutil python-openid pytz pyusb PyYAML qrcode reportlab requests six suds-jurko vatnumber vobject Werkzeug XlsxWriter xlwt xlrd
+pip3 install Babel gdata decorator docutils ebaysdk feedparser gevent greenlet html2text Jinja2 lxml Mako MarkupSafe mock num2words ofxparse passlib Pillow psutil psycogreen psycopg2 pydot pyparsing PyPDF2 pyserial python-dateutil python-openid pytz pyusb PyYAML qrcode reportlab requests six suds-jurko vatnumber vobject Werkzeug XlsxWriter xlwt xlrd
 
 #--------------------------------------------------
 # Odoo Web Dependencies
@@ -84,7 +84,6 @@ sudo npm install -g less less-plugin-clean-css
 
 sudo apt-get install node-less
 
-pip install gdata
 
 #--------------------------------------------------
 # cd /opt/odoo
