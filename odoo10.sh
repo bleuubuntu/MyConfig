@@ -210,7 +210,7 @@ echo 'exit 0' >> ~/$OE_CONFIG
 echo -e "* Security Init File"
 sudo mv ~/$OE_CONFIG /etc/init.d/$OE_CONFIG
 sudo chmod 755 /etc/init.d/$OE_CONFIG
-sudo chown root: /etc/init.d/$OE_CONFIG
+sudo chown $OE_USER: /etc/init.d/$OE_CONFIG
 
 echo -e "* Start ODOO on Startup"
 sudo update-rc.d $OE_CONFIG defaults
