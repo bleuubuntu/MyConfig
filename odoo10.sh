@@ -39,7 +39,7 @@ echo -e "\n---- PostgreSQL $PG_VERSION Settings  ----"
 sudo sed -i s/"#listen_addresses = 'localhost'"/"listen_addresses = '*'"/g /etc/postgresql/9.5/main/postgresql.conf
 
 echo -e "\n---- Creating the ODOO PostgreSQL User  ----"
-postgres -c "createuser -s $OE_USER" 2> /dev/null || true
+su - postgres -c "createuser -s $OE_USER" 2> /dev/null || true
 
 sudo service postgresql restart
 
@@ -61,9 +61,9 @@ sudo chown $OE_USER:$OE_USER /var/log/$OE_USER
 
 echo -e "\n---- Install tool packages ----"
 wget https://raw.githubusercontent.com/odoo/odoo/$OE_VERSION/requirements.txt
-sudo pip install -r requirements.txt
+pip install -r requirements.txt
 wget https://raw.githubusercontent.com/odoo/odoo/$OE_VERSION/doc/requirements.txt
-sudo pip install -r requirements.txt.1
+pip install -r requirements.txt.1
 
 echo -e "\n---- Install python packages ----"
 sudo apt-get -y install git python-gdata python-psycogreen python-ofxparse node-clean-css python-gevent  python-dateutil python-feedparser python-ldap python-libxslt1 python-lxml python-mako python-openid python-psycopg2 python-pybabel python-pychart python-pydot python-pyparsing python-reportlab python-simplejson python-tz python-vatnumber python-vobject python-webdav python-werkzeug python-xlwt python-yaml python-zsi python-docutils python-psutil python-mock python-unittest2 python-jinja2 python-pypdf python-decorator python-requests python-passlib python-suds  subversion libfontenc1 libxfont1 xfonts-75dpi xfonts-base xfonts-encodings xfonts-utils zlib1g-dev python-xlsxwriter python-pip python-imaging python-setuptools python-dev libxslt-dev libxml2-dev libldap2-dev libsasl2-dev node-less postgresql-server-dev-all bzr bzrtools gdebi-core
