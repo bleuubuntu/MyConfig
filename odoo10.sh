@@ -13,18 +13,18 @@
 
 
 OE_USER="odoo10"
-OE_HOME="/odoo10"
-OE_HOME_EXT="/$OE_USER/$OE_USER"
+OE_HOME="/odoo"
+OE_HOME_EXT="/$OE_HOME/$OE_USER"
 
 #Enter version for checkout "9.0" for version 9.0,"8.0" for version 8.0, "7.0 (version 7), "master" for trunk
 OE_VERSION="10.0"
 
 #Set the default Odoo port (you still have to use -c /etc/odoo-server.conf for example to use this.)
-OE_PORT="8069"
+OE_PORT="80"
 
 #set the superadmin passwordكلمةسوب
 OE_SUPERADMIN="SuperPass"
-OE_CONFIG="$OE_USER"
+OE_CONFIG="$OE_USER-c"
 
 
 
@@ -78,16 +78,15 @@ cd $OE_HOME
 sudo su $OE_USER -c "git clone --depth 1 --single-branch --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/"
 cd -
 
-echo -e "\n---- Setting permissions on home folder ----"
-sudo chown -R $OE_USER:$OE_USER $OE_HOME/*
 
 echo -e "\n---- Create custom module directory ----"
 sudo su $OE_USER -c "mkdir $OE_HOME/custom"
 sudo su $OE_USER -c "mkdir $OE_HOME/custom/addons"
-
 sudo mkdir /var/lib/odoo
+sudo mkdir /etc/$OE_USER/
+echo -e "\n---- Setting permissions on folder ----"
 sudo chown -R $OE_USER:$OE_USER /var/lib/odoo
-
+sudo chown -R $OE_USER:$OE_USER $OE_HOME/*
 
 echo -e "\n---- Install wkhtml and place on correct place for ODOO 8-9-10 ----"
 sudo wget http://downloads.wkhtmltopdf.org/0.12/0.12.2.1/wkhtmltox-0.12.2.1_linux-trusty-amd64.deb --no-check-certificate
@@ -101,7 +100,7 @@ sudo cp /usr/local/bin/wkhtmltoimage /usr/bin
 #--------------------------------------------------
 # Configure ODOO
 #--------------------------------------------------
-sudo mkdir /etc/$OE_USER/
+
 sudo cp $OE_HOME_EXT/debian/odoo.conf /etc/$OE_USER/$OE_CONFIG.conf
 sudo chown $OE_USER:$OE_USER /etc/$OE_USER/$OE_CONFIG.conf
 sudo chmod 640 /etc/$OE_USER/$OE_CONFIG.conf
