@@ -157,11 +157,11 @@ sudo su root -c "echo 'logfile = /var/log/$OE_USER/$OE_CONFIG$1.log' >> /etc/$OE
 echo -e "* Change default xmlrpc port"
 sudo su root -c "echo 'xmlrpc_port = $OE_PORT' >> /etc/$OE_USER/$OE_CONFIG.conf"
 
+
+
 echo -e "* Create startup file"
-
-sudo echo '#!/bin/sh' >> $OE_HOME/start.sh
-
-sudo echo 'sudo -u $OE_USER $OE_HOME_EXT/odoo-bin --config=/etc/$OE_USER/$OE_CONFIG.conf' >> $OE_HOME/start.sh
+sudo su root -c "echo '#!/bin/sh' >> $OE_HOME_EXT/start.sh"
+sudo su root -c "echo 'sudo -u $OE_USER $OE_HOME_EXT/odoo-bin --config=/etc/${OE_CONFIG}.conf' >> $OE_HOME_EXT/start.sh"
 sudo chmod 755 $OE_HOME/start.sh
 
 #--------------------------------------------------
