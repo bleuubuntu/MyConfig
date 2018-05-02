@@ -69,8 +69,11 @@ sudo chown $OE_USER:$OE_USER /var/log/$OE_USER
 echo -e "\n---- Install tool packages ----"
 sudo apt-get install python3-pip -y
 
+wget https://raw.githubusercontent.com/odoo/odoo/$OE_VERSION/requirements.txt
+pip3 install -r requirements.txt
 
-pip3 install babel gdata decorator docutils ebaysdk feedparser gevent greenlet html2text Jinja2 lxml Mako MarkupSafe mock num2words ofxparse passlib Pillow psutil psycogreen psycopg2 pydot pyparsing PyPDF2 pyserial dateutil openid pytz pyusb PyYAML qrcode reportlab requests six suds-jurko vatnumber vobject werkzeug XlsxWriter xlwt xlrd pypdf2 passlib 
+pip3 install python-dateutil babel gdata decorator docutils ebaysdk feedparser gevent greenlet html2text Jinja2 lxml Mako MarkupSafe mock num2words ofxparse passlib Pillow psutil psycogreen psycopg2 pydot pyparsing PyPDF2 pyserial openid pytz pyusb pyyaml qrcode reportlab requests six suds-jurko vatnumber vobject werkzeug XlsxWriter xlwt xlrd pypdf2 passlib 
+
 
 #--------------------------------------------------
 # Odoo Web Dependencies
