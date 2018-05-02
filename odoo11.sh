@@ -1,13 +1,13 @@
 #!/bin/bash
 ################################################################################
-# Script for installing Odoo V10 on Ubuntu 
+# Script for installing Odoo V11 only on Ubuntu 
 # Author: Djerad Bessam
 #-------------------------------------------------------------------------------
 # This script will install Odoo on your Ubuntu  server. It can install multiple Odoo instances
 # in one Ubuntu because of the different xmlrpc_ports
 #-------------------------------------------------------------------------------
 # sudo sh
-# sh odoo_set10.sh
+# sh odoo11.sh
 ################################################################################
 sudo apt-get update
 sudo apt-get upgrade -y
@@ -157,8 +157,8 @@ sudo su root -c "echo 'xmlrpc_port = $OE_PORT' >> /etc/$OE_USER/$OE_CONFIG.conf"
 echo -e "* Create startup file"
 
 sudo echo '#!/bin/sh' >> $OE_HOME/start.sh
-sudo su root -c "echo 'db_user = $OE_USER' >> /etc/$OE_USER/$OE_CONFIG.conf"
-sudo su root -c "echo 'sudo -u $OE_USER $OE_HOME_EXT/odoo-bin --config=/etc/$OE_USER/$OE_CONFIG.conf' >> $OE_HOME/start.sh"
+
+sudo echo 'sudo -u $OE_USER $OE_HOME_EXT/odoo-bin --config=/etc/$OE_USER/$OE_CONFIG.conf' >> $OE_HOME/start.sh
 sudo chmod 755 $OE_HOME/start.sh
 
 #--------------------------------------------------
