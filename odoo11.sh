@@ -9,9 +9,9 @@
 # sudo sh
 # sh odoo11.sh
 ################################################################################
-#sudo apt-get update
-#sudo apt-get upgrade -y
-#sudo apt-get install -y locales
+sudo apt-get update
+sudo apt-get upgrade -y
+sudo apt-get install -y locales
 
 
 OE_USER="odoo"
