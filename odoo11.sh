@@ -9,9 +9,9 @@
 # sudo sh
 # sh odoo11.sh
 ################################################################################
-sudo apt-get update
-sudo apt-get upgrade -y
-sudo apt-get install -y locales
+#sudo apt-get update
+#sudo apt-get upgrade -y
+#sudo apt-get install -y locales
 
 
 OE_USER="odoo"
@@ -22,10 +22,10 @@ OE_HOME_EXT="/$OE_USER/$OE_USER"
 OE_VERSION="11.0"
 
 #Set the default Odoo port (you still have to use -c /etc/odoo-server.conf for example to use this.)
-OE_PORT="8069"
+OE_PORT="80"
 
 #set the superadmin passwordكلمةسوب
-OE_SUPERADMIN="SuperPass"
+OE_SUPERADMIN="Super11Pass"
 OE_CONFIG="$OE_USER"
 
 
@@ -82,7 +82,7 @@ sudo ln -s /usr/bin/nodejs /usr/bin/node
 
 sudo npm install -g less less-plugin-clean-css
 
-sudo apt-get install node-less
+sudo apt-get install node-less -y
 
 
 #--------------------------------------------------
