@@ -22,7 +22,7 @@ OE_HOME_EXT="/$OE_USER/$OE_USER"
 OE_VERSION="11.0"
 
 #Set the default Odoo port (you still have to use -c /etc/odoo-server.conf for example to use this.)
-OE_PORT="80"
+OE_PORT="8069"
 
 #set the superadmin passwordكلمةسوب
 OE_SUPERADMIN="Super11Pass"
