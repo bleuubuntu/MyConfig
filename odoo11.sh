@@ -2,6 +2,8 @@
 ################################################################################
 # Script for installing Odoo V11 only on Ubuntu 
 # Author: Djerad Bessam
+# They are some problem with python3-pip
+# It's recommanded that you install it and reboot your computer before running this software 
 #-------------------------------------------------------------------------------
 # This script will install Odoo on your Ubuntu  server. It can install multiple Odoo instances
 # in one Ubuntu because of the different xmlrpc_ports
@@ -44,7 +46,7 @@ sudo apt-get update
 sudo apt-get install postgresql postgresql-contrib -y
 
 echo -e "\n---- PostgreSQL $PG_VERSION Settings  ----"
-sudo sed -i s/"#listen_addresses = 'localhost'"/"listen_addresses = '*'"/g /etc/postgresql/10/main/postgresql.conf
+# A VOIR sudo sed -i s/"#listen_addresses = 'localhost'"/"listen_addresses = '*'"/g /etc/postgresql/10/main/postgresql.conf
 
 echo -e "\n---- Creating the ODOO PostgreSQL User  ----"
 sudo su - postgres -c "createuser -s $OE_USER" 2> /dev/null || true
@@ -67,7 +69,7 @@ sudo chown $OE_USER:$OE_USER /var/log/$OE_USER
 # Install Basic Dependencies
 #--------------------------------------------------
 echo -e "\n---- Install tool packages ----"
-sudo apt-get install python3-pip -y
+# MUST RUN IT BEFOR USING THIS SCRIPT THEN REBOOT THE COMPUTER THEN RUN THIS SCRIPT sudo apt-get install python3-pip -y
 
 wget https://raw.githubusercontent.com/odoo/odoo/$OE_VERSION/requirements.txt
 pip3 install -r requirements.txt
@@ -127,10 +129,7 @@ sudo chown -R $OE_USER:$OE_USER /var/lib/odoo
 
 
 echo -e "\n---- Install wkhtml and place on correct place for ODOO 8-9-10 ----"
-sudo wget http://downloads.wkhtmltopdf.org/0.12/0.12.2.1/wkhtmltox-0.12.2.1_linux-trusty-amd64.deb --no-check-certificate
-sudo dpkg -i wkhtmltox-0.12.2.1_linux-trusty-amd64.deb
-sudo apt-get install -f -y
-sudo dpkg -i wkhtmltox-0.12.2.1_linux-trusty-amd64.deb
+sudo apt install wkhtmltopdf
 sudo cp /usr/local/bin/wkhtmltopdf /usr/bin
 sudo cp /usr/local/bin/wkhtmltoimage /usr/bin
 
