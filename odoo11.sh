@@ -69,12 +69,12 @@ sudo chown $OE_USER:$OE_USER /var/log/$OE_USER
 # Install Basic Dependencies
 #--------------------------------------------------
 echo -e "\n---- Install tool packages ----"
-# MUST RUN IT BEFOR USING THIS SCRIPT THEN REBOOT THE COMPUTER THEN RUN THIS SCRIPT sudo apt-get install python3-pip -y
+apt-get install python3-pip -y
 
 wget https://raw.githubusercontent.com/odoo/odoo/$OE_VERSION/requirements.txt
 pip3 install -r requirements.txt
 
-pip3 install python-dateutil babel gdata decorator docutils ebaysdk feedparser gevent greenlet html2text Jinja2 lxml Mako MarkupSafe mock num2words ofxparse passlib Pillow psutil psycogreen psycopg2 pydot pyparsing PyPDF2 pyserial openid pytz pyusb pyyaml qrcode reportlab requests six suds-jurko vatnumber vobject werkzeug XlsxWriter xlwt xlrd pypdf2 passlib 
+pip3 install python-dateutil babel gdata decorator docutils ebaysdk feedparser gevent greenlet html2text Jinja2 lxml Mako MarkupSafe mock num2words ofxparse passlib Pillow psutil psycogreen psycopg2 pydot pyparsing PyPDF2 pyserial pytz pyusb pyyaml qrcode reportlab requests six suds-jurko vatnumber vobject werkzeug XlsxWriter xlwt xlrd passlib 
 
 
 #--------------------------------------------------
@@ -159,6 +159,7 @@ sudo su root -c "echo 'xmlrpc_port = $OE_PORT' >> /etc/$OE_USER/$OE_CONFIG.conf"
 
 
 echo -e "* Create startup file"
+sudo touch start.sh
 sudo su root -c "echo '#!/bin/sh' >> $OE_HOME_EXT/start.sh"
 sudo su root -c "echo 'sudo -u $OE_USER $OE_HOME_EXT/odoo-bin --config=/etc/${OE_CONFIG}.conf' >> $OE_HOME_EXT/start.sh"
 sudo chmod 755 $OE_HOME/start.sh
@@ -236,6 +237,7 @@ echo 'exit 1' >> ~/$OE_CONFIG
 echo ';;' >> ~/$OE_CONFIG
 echo '' >> ~/$OE_CONFIG
 echo 'esac' >> ~/$OE_CONFIG
+echo 'iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8069' >> ~/$OE_CONFIG
 echo 'exit 0' >> ~/$OE_CONFIG
 
 
