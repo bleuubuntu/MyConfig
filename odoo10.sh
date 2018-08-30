@@ -13,7 +13,7 @@
 
 
 OE_USER="odoo10"
-OE_HOME="/odoo"
+OE_HOME="/odoo10"
 OE_HOME_EXT="/$OE_HOME/$OE_USER"
 
 #Enter version for checkout "9.0" for version 9.0,"8.0" for version 8.0, "7.0 (version 7), "master" for trunk
@@ -82,10 +82,10 @@ cd -
 echo -e "\n---- Create custom module directory ----"
 sudo su $OE_USER -c "mkdir $OE_HOME/custom"
 sudo su $OE_USER -c "mkdir $OE_HOME/custom/addons"
-sudo mkdir /var/lib/odoo
+sudo mkdir /var/lib/$OE_USER/
 sudo mkdir /etc/$OE_USER/
 echo -e "\n---- Setting permissions on folder ----"
-sudo chown -R $OE_USER:$OE_USER /var/lib/odoo
+sudo chown -R $OE_USER:$OE_USER /var/lib/$OE_USER
 sudo chown -R $OE_USER:$OE_USER $OE_HOME/*
 
 echo -e "\n---- Install wkhtml and place on correct place for ODOO 8-9-10 ----"
