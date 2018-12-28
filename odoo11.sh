@@ -14,7 +14,8 @@
 sudo apt-get update
 sudo apt-get upgrade -y
 sudo apt-get install -y locales
-
+sudo add-apt-repository universe
+sudo apt-get update
 
 OE_USER="odoo"
 OE_HOME="/odoo"
