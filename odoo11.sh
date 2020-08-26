@@ -48,7 +48,8 @@ sudo apt-get install postgresql postgresql-contrib -y
 echo -e "\n---- PostgreSQL $PG_VERSION Settings  ----"
 # A VOIR sudo sed -i s/"#listen_addresses = 'localhost'"/"listen_addresses = '*'"/g /etc/postgresql/10/main/postgresql.conf
 
-echo -e "\n---- Creating the ODOO PostgreSQL User  ----"
+echo -e "\n---- Creating the 
+PostgreSQL User  ----"
 sudo su - postgres -c "createuser -s $OE_USER" 2> /dev/null || true
 
 sudo service postgresql restart
@@ -91,13 +92,13 @@ sudo apt-get install node-less -y
 
 
 #--------------------------------------------------
-# cd /opt/odoo
+# cd /opt/$OE_USER
 
 # sudo wget https://pypi.python.org/packages/a8/70/bd554151443fe9e89d9a934a7891aaffc63b9cb5c7d608972919a002c03c/gdata-2.0.18.tar.gz
 
 # sudo tar zxvf gdata-2.0.18.tar.gz
 
-# sudo chown -R odoo: gdata-2.0.18
+# sudo chown -R $OE_USER: gdata-2.0.18
 
 # sudo -s
 
@@ -124,8 +125,8 @@ mkdir $OE_HOME/custom/addons
 echo -e "\n---- Setting permissions on home folder ----"
 sudo chown -R $OE_USER:$OE_USER $OE_HOME/*
 
-sudo mkdir /var/lib/odoo
-sudo chown -R $OE_USER:$OE_USER /var/lib/odoo
+sudo mkdir /var/lib/$OE_USER
+sudo chown -R $OE_USER:$OE_USER /var/lib/$OE_USER
 
 
 echo -e "\n---- Install wkhtml and place on correct place for ODOO 8-9-10 ----"
@@ -147,7 +148,7 @@ sudo cp /usr/local/bin/wkhtmltoimage /usr/bin
 # Configure ODOO
 #--------------------------------------------------
 sudo mkdir /etc/$OE_USER/
-sudo cp $OE_HOME_EXT/debian/odoo.conf /etc/$OE_USER/$OE_CONFIG.conf
+sudo cp $OE_HOME_EXT/debian/$OE_USER.conf /etc/$OE_USER/$OE_CONFIG.conf
 sudo chown $OE_USER:$OE_USER /etc/$OE_USER/$OE_CONFIG.conf
 sudo chmod 640 /etc/$OE_USER/$OE_CONFIG.conf
 
