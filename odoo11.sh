@@ -76,7 +76,7 @@ wget https://raw.githubusercontent.com/odoo/odoo/$OE_VERSION/requirements.txt
 pip3 install -r requirements.txt
 
 #pip3 install gevent greenlet    Mako MarkupSafe mock ofxparse passlib psutil psycogreen psycopg2 pydot pyparsing pyserial pytz pyusb pyyaml qrcode reportlab requests six suds-py3 vatnumber vobject werkzeug XlsxWriter xlwt xlrd passlib 
-pip3 install libsass==0.12.3
+pip3 install -r libsass==0.12.3
 
 #--------------------------------------------------
 # Odoo Web Dependencies
@@ -143,20 +143,8 @@ sudo apt-get install -f -y
 sudo cp /usr/local/bin/wkhtmltopdf /usr/bin
 sudo cp /usr/local/bin/wkhtmltoimage /usr/bin
 
-pip3 install pypdf2==1.26.0
-pip3 install passlib
-pip3 install werkzeug==0.11.15
-pip3 install lxml
-apt install python-dateutil
-pip3 install datetimerange
-pip3 install psycopg2==2.3.7.1
-pip3 install pillow
-pip3 install psutil
-pip3 install reportlab
-pip3 install html2text
-pip3 install paramiko
-pip3 install num2words
-pip3 install suds-jurko==0.6
+pip3 install -r datetimerange
+pip3 install -r paramiko
 #--------------------------------------------------
 # Configure ODOO
 #--------------------------------------------------
