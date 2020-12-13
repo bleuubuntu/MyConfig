@@ -75,7 +75,7 @@ apt-get install python3-pip -y
 wget https://raw.githubusercontent.com/odoo/odoo/$OE_VERSION/requirements.txt
 pip3 install -r requirements.txt
 
-pip3 install python-dateutil babel gdata decorator docutils ebaysdk feedparser gevent greenlet html2text Jinja2 lxml Mako MarkupSafe mock num2words ofxparse passlib Pillow psutil psycogreen psycopg2 pydot pyparsing PyPDF2 pyserial pytz pyusb pyyaml qrcode reportlab requests six suds-py3 vatnumber vobject werkzeug XlsxWriter xlwt xlrd passlib 
+pip3 install docutils ebaysdk feedparser gevent greenlet html2text Jinja2 lxml Mako MarkupSafe mock ofxparse passlib psutil psycogreen psycopg2 pydot pyparsing pyserial pytz pyusb pyyaml qrcode reportlab requests six suds-py3 vatnumber vobject werkzeug XlsxWriter xlwt xlrd passlib 
 pip3 install libsass==0.12.3
 
 #--------------------------------------------------
@@ -154,7 +154,9 @@ pip3 install pillow
 pip3 install psutil
 pip3 install reportlab
 pip3 install html2text
-
+pip3 install paramiko
+pip3 install num2words
+pip3 install suds-jurko==0.6
 #--------------------------------------------------
 # Configure ODOO
 #--------------------------------------------------
