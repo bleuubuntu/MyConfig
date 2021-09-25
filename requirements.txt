@@ -9,9 +9,9 @@ greenlet==0.4.10 ; python_version < '3.7'
 greenlet==0.4.14 ; python_version >= '3.7'
 html2text==2016.9.19
 Jinja2==2.10.1
-lxml==3.7.1 ; sys_platform != 'win32' and python_version < '3.7'
-lxml==4.2.3 ; sys_platform != 'win32' and python_version >= '3.7'
-lxml ; sys_platform == 'win32'
+#lxml==3.7.1 ; sys_platform != 'win32' and python_version < '3.7'
+#lxml==4.2.3 ; sys_platform != 'win32' and python_version >= '3.7'
+#lxml ; sys_platform == 'win32'
 Mako==1.0.4
 MarkupSafe==0.23
 mock==2.0.0
@@ -25,7 +25,7 @@ psutil==5.6.3; sys_platform == 'win32'
 psycopg2==2.7.3.1; sys_platform != 'win32'
 psycopg2==2.8.3; sys_platform == 'win32'
 pydot==1.2.3
-pyldap==2.4.28; sys_platform != 'win32'
+#pyldap==2.4.28; sys_platform != 'win32'
 pyparsing==2.1.10
 PyPDF2==1.26.0
 pyserial==3.1.1
