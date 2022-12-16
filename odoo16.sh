@@ -9,7 +9,7 @@
 # in one Ubuntu because of the different xmlrpc_ports
 #-------------------------------------------------------------------------------
 # sudo sh
-# sh odoo11.sh
+# sh odoo16.sh
 ################################################################################
 sudo add-apt-repository universe
 sudo apt-get update
@@ -21,13 +21,13 @@ OE_HOME="/odoo"
 OE_HOME_EXT="/$OE_USER/$OE_USER"
 
 
-OE_VERSION="11.0"
+OE_VERSION="16.0"
 
 #Set the default Odoo port (you still have to use -c /etc/odoo-server.conf for example to use this.)
 OE_PORT="8069"
 
 #set the superadmin passwordكلمةسوب
-OE_SUPERADMIN="Super11Pass"
+OE_SUPERADMIN="$pbkdf2-sha512$25000$XWvNudd6T0kJwVhrbc2ZUw$fGBMLCFF/z7cPZWFzb1K5Kdh.nJaUM3HPpRO8omF7QlCj4s3FKKm2F7zF5j9eG3DlSAbJqRK4is0nrEtJlmVdg"
 OE_CONFIG="$OE_USER"
 
 
@@ -37,11 +37,6 @@ OE_CONFIG="$OE_USER"
 #--------------------------------------------------
 
 echo -e "\n---- Install PostgreSQL 10 Serv ----"
-# sudo apt-get install postgresql -y
-# echo 'deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main' >> /etc/apt/sources.list.d/pgdg.list
-# wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-
-# sudo apt-get update
 
 sudo apt-get install postgresql postgresql-contrib -y
 
@@ -70,13 +65,13 @@ sudo chown $OE_USER:$OE_USER /var/log/$OE_USER
 # Install Basic Dependencies
 #--------------------------------------------------
 echo -e "\n---- Install tool packages ----"
-apt-get install python3-pip -y
+sudo apt-get install python3-pip -y
+sudo apt-get install gcc libpq-dev python3-dev
+pip3 install wheel
+wget https://raw.githubusercontent.com/bleuubuntu/MyConfig/odoo16/requirements.txt
+sudo pip3 install -r requirements.txt
 
-wget https://raw.githubusercontent.com/odoo/odoo/$OE_VERSION/requirements.txt
-pip3 install -r requirements.txt
 
-#pip3 install gevent greenlet    Mako MarkupSafe mock ofxparse passlib psutil psycogreen psycopg2 pydot pyparsing pyserial pytz pyusb pyyaml qrcode reportlab requests six suds-py3 vatnumber vobject werkzeug XlsxWriter xlwt xlrd passlib 
-pip3 install -r libsass==0.12.3
 
 #--------------------------------------------------
 # Odoo Web Dependencies
@@ -130,14 +125,14 @@ sudo chown -R $OE_USER:$OE_USER /var/lib/$OE_USER
 
 
 echo -e "\n---- Install wkhtml and place on correct place for ODOO 8-9-10 ----"
-wget http://ftp.br.debian.org/debian/pool/main/libj/libjpeg-turbo/libjpeg62-turbo_1.5.1-2_amd64.deb
-dpkg -i libjpeg62-turbo_1.5.1-2_amd64.deb
+#wget http://ftp.br.debian.org/debian/pool/main/libj/libjpeg-turbo/libjpeg62-turbo_1.5.1-2_amd64.deb
+#dpkg -i libjpeg62-turbo_1.5.1-2_amd64.deb
 
- wget http://mirrors.kernel.org/ubuntu/pool/main/libp/libpng/libpng12-0_1.2.54-1ubuntu1_amd64.deb
-dpkg -i libpng12-0_1.2.54-1ubuntu1_amd64.deb
+#wget http://mirrors.kernel.org/ubuntu/pool/main/libp/libpng/libpng12-0_1.2.54-1ubuntu1_amd64.deb
+#dpkg -i libpng12-0_1.2.54-1ubuntu1_amd64.deb
 
-wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.2.1/wkhtmltox-0.12.2.1_linux-trusty-amd64.deb
-sudo dpkg -i wkhtmltox-0.12.2.1_linux-trusty-amd64.deb
+wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb
+sudo dpkg -i wkhtmltox_0.12.6.1-2.jammy_amd64.deb
 apt-get install -f -y
 
 sudo cp /usr/local/bin/wkhtmltopdf /usr/bin
