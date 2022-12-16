@@ -66,7 +66,7 @@ sudo chown $OE_USER:$OE_USER /var/log/$OE_USER
 #--------------------------------------------------
 echo -e "\n---- Install tool packages ----"
 sudo apt-get install python3-pip -y
-sudo apt-get install gcc libpq-dev python3-dev
+sudo apt-get install gcc libpq-dev python3-dev -y
 pip3 install wheel
 wget https://raw.githubusercontent.com/bleuubuntu/MyConfig/odoo16/requirements.txt
 sudo pip3 install -r requirements.txt
