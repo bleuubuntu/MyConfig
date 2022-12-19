@@ -15,6 +15,7 @@ sudo add-apt-repository universe
 sudo apt-get update
 sudo apt-get upgrade -y
 sudo apt-get install -y locales
+sudo apt-get update --fix-missing
 
 OE_USER="odoo"
 OE_HOME="/odoo"
@@ -67,6 +68,7 @@ sudo chown $OE_USER:$OE_USER /var/log/$OE_USER
 echo -e "\n---- Install tool packages ----"
 sudo apt-get install python3-pip -y
 sudo apt-get install gcc libpq-dev python3-dev -y
+sudo apt-get update --fix-missing
 pip3 install wheel
 wget https://raw.githubusercontent.com/bleuubuntu/MyConfig/odoo16/requirements.txt
 sudo pip3 install -r requirements.txt
